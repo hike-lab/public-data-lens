@@ -1,0 +1,187 @@
+{
+  "registryVersion": "1.0",
+  "registryUri": "https://service.datahub.kr/projects/public-data-lens/rules/catalog/1.0",
+  "rules": [
+    {
+      "ruleId": "catalog-completeness-file-v1.0",
+      "title": "목록 메타데이터 완전성 (FILE 프로파일)",
+      "effectiveDate": "2026-07-17",
+      "definition": "FILE 유형 목록 행의 catalogMetadataCompleteness. 평가 필드가 채워진 비율(값이 없거나 '-'이면 미기재). AIRD 제2부 D1(데이터 내용 완전성)과 구분되는 목록 수준 지표.",
+      "fields": [
+        "title",
+        "theme",
+        "org_name",
+        "update_cycle",
+        "keywords",
+        "description",
+        "license",
+        "created_date",
+        "modified_date",
+        "list_url",
+        "spatial",
+        "temporal",
+        "data_limits",
+        "format",
+        "row_count",
+        "file_data_name"
+      ]
+    },
+    {
+      "ruleId": "catalog-completeness-api-v1.0",
+      "title": "목록 메타데이터 완전성 (API 프로파일)",
+      "effectiveDate": "2026-07-17",
+      "definition": "API 유형 목록 행의 catalogMetadataCompleteness. 파일 전용 필드(전체행·파일데이터명 등)를 감점하지 않는다(설계서 §3.2).",
+      "fields": [
+        "title",
+        "theme",
+        "org_name",
+        "update_cycle",
+        "keywords",
+        "description",
+        "license",
+        "created_date",
+        "modified_date",
+        "list_url",
+        "spatial",
+        "temporal",
+        "data_limits",
+        "api_type",
+        "traffic"
+      ]
+    },
+    {
+      "ruleId": "catalog-completeness-std-v1.0",
+      "title": "목록 메타데이터 완전성 (STD 프로파일)",
+      "effectiveDate": "2026-07-17",
+      "definition": "표준데이터셋(STD) 목록 행의 catalogMetadataCompleteness.",
+      "fields": [
+        "title",
+        "theme",
+        "org_name",
+        "update_cycle",
+        "keywords",
+        "description",
+        "created_date",
+        "modified_date",
+        "list_url",
+        "spatial",
+        "temporal",
+        "format"
+      ]
+    },
+    {
+      "ruleId": "normalize-format-v1.0",
+      "title": "데이터포맷 정규화",
+      "effectiveDate": "2026-07-17",
+      "definition": "확장자(데이터포맷) 원본값을 대문자 정규 토큰 목록으로 변환. '+'로 결합된 복합 표기는 분리(JSON+XML → [JSON, XML]). 원본값은 source 뷰에 보존."
+    },
+    {
+      "ruleId": "normalize-cycle-v1.0",
+      "title": "업데이트 주기 정규화",
+      "effectiveDate": "2026-07-17",
+      "definition": "수시→IRREGULAR, 일간→DAILY, 주간→WEEKLY, 월간→MONTHLY, 분기→QUARTERLY, 반기→SEMIANNUAL, 연간→ANNUAL, '-'→UNSPECIFIED, 그 외→OTHER."
+    },
+    {
+      "ruleId": "normalize-license-v1.0",
+      "title": "이용허락범위 정규화",
+      "effectiveDate": "2026-07-17",
+      "definition": "이용허락범위 문자열을 코드로 정규화(NO_RESTRICTION, KOGL_BY, KOGL_BY_NC, KOGL_BY_ND, KOGL_BY_NC_ND, CC_BY_NC_SA, UNSPECIFIED, OTHER). 법적 해석이 아닌 표기 정규화이며 원문 확인이 필요하다."
+    },
+    {
+      "ruleId": "record-identity-v1.0",
+      "title": "레코드 식별 규칙",
+      "effectiveDate": "2026-07-17",
+      "definition": "Dataset 정본 URI는 항상 목록키 기반 불변(/dataset/{목록키}, §7). record_id는 내부 조회 식별자이며 동일 목록키가 복수 목록유형(FILE/API)으로 등재된 경우 '{목록키}-{목록유형}'으로 분리 보존하고 DUPLICATE_LIST_KEY 이슈 관찰을 생성한다(원본 불변, §6). 이중 등재는 동일 데이터셋의 복수 제공 형태로 해석하며, 유형별 시점 기술은 dcat:CatalogRecord(/catalog/{월}/record/{record_id})가 구분해 담는다."
+    },
+    {
+      "ruleId": "region-match-v1.0",
+      "title": "지역 매칭 및 근거 수준",
+      "effectiveDate": "2026-07-17",
+      "definition": "시·도(17개, ISO 3166-2:KR) 가제티어 기반. 근거 수준: EXPLICIT_SPATIAL(공간범위 필드, 0.95) > INFERRED_FROM_TITLE(0.8) > INFERRED_FROM_PUBLISHER(0.6) > INFERRED_FROM_DESCRIPTION(0.5). 알려진 한계: 단축 지명 동음이의(예: 광주)는 낮은 신뢰도로 매칭될 수 있다."
+    },
+    {
+      "ruleId": "ranking-bm25-v1.0",
+      "title": "관련성 랭킹",
+      "effectiveDate": "2026-07-17",
+      "definition": "SQLite FTS5 BM25(제목·키워드·설명·기관 필드, 가중치 4/3/1/2). 동일 인덱스·파라미터 버전 내 재현 가능. 동점 처리(tieBreak): record_id 오름차순. 질의 없는 검색은 수정일 내림차순."
+    },
+    {
+      "ruleId": "card-projection-v1.0",
+      "title": "카드 뷰 재구성 규칙",
+      "effectiveDate": "2026-07-17",
+      "definition": "get_dataset view=card의 판단용 요약 필드 선택·재구성 규칙. 정규화 필드에서만 파생하며 새로운 사실을 생성하지 않는다."
+    },
+    {
+      "ruleId": "diff-v1.0",
+      "title": "월별 변경 판정",
+      "effectiveDate": "2026-07-17",
+      "definition": "상태: ADDED / MODIFIED(변경 필드 목록 동반) / MISSING_FROM_SNAPSHOT / REAPPEARED / POSSIBLE_IDENTITY_CHANGE(제목·기관 동시 변경) / OFFICIALLY_WITHDRAWN(포털 명시 확인 파일 기재 시에만). 스냅샷 부재를 폐기로 단정하지 않는다."
+    },
+    {
+      "ruleId": "issue-detect-v1.0",
+      "title": "메타데이터 이슈 자동 탐지",
+      "effectiveDate": "2026-07-17",
+      "definition": "탐지 유형: DUPLICATE_LIST_KEY, LEADING_QUOTE_ARTIFACT(백틱 등 표기 잔재), INVALID_URL_FORMAT, NEGATIVE_OR_NONNUMERIC_COUNT. 관찰 객체는 DQV QualityAnnotation 계열로 원본과 분리 저장, 상태 흐름 SUGGESTED→검토→수용/기각→해결. 동일 유형·필드가 전체 행의 50%를 초과해 나타나는 계통적 패턴은 행별 관찰 대신 카탈로그 수준 관찰 1건(record_id='@catalog', 발생 수 기재)으로 축약한다."
+    },
+    {
+      "ruleId": "freshness-v1.0",
+      "title": "최신성 판정",
+      "effectiveDate": "2026-07-17",
+      "definition": "수정일과 정규화된 업데이트 주기를 비교해 FRESH / POSSIBLY_STALE / UNKNOWN을 판정한다. 주기가 UNSPECIFIED/IRREGULAR이면 UNKNOWN. 목록 수준 판정이며 실데이터 최신성이 아니다."
+    },
+    {
+      "ruleId": "aird-mmi-v1.0",
+      "title": "(폐기) 월별 카탈로그 MMI 측정 및 DM-0 판정",
+      "effectiveDate": "2026-07-17",
+      "deprecated": true,
+      "supersededBy": "aird-mmi-v1.1",
+      "definition": "자체 정의 8지표를 MMI로 오기한 판정 규칙. AIRD 제2부의 MMI 정의와 불일치하여 폐기. 해당 8지표는 catalog-discoverability-v1.0으로 이관."
+    },
+    {
+      "ruleId": "aird-mmi-v1.1",
+      "title": "월별 카탈로그 표준 MMI 측정 및 DM-0 판정",
+      "effectiveDate": "2026-07-17",
+      "definition": "AIRD 제2부 v0.87 기준. 월별 카탈로그 전체를 1건의 STRUCT 데이터셋으로 보고 MMI 4지표(D5-03 통계적 타당성, D6-01 유일성, D7-01 인코딩 일관성, D7-02 기술적 유효성)를 측정한다. STRUCT 적용 가능 집합은 4개 전부(D7-02는 선택(○)이나 적용 가능 — 표 9.1). 사전 검사: recordCount ≥ 1(0이면 SCHEMA_ONLY, 판정 불가). QI_MMI = 적용 가능 지표 점수 합 / 적용 가능 지표 수. 전 지표 APPLIED이고 QI_MMI ≥ 0.7이면 DM-0(기본 적합성). 표기: 'DM-0 (기본 적합성, STRUCT, 참고)' — DM-0은 참고 공시이며 공식 적합성 선언은 DM-2 이상(제2부 5.4절). aird:qualityTier는 Discoverable 상태에서 기록 금지(제3부 5.3절). 측정 대상 해시·도구·규칙 버전을 provenance로 기록."
+    },
+    {
+      "ruleId": "catalog-discoverability-v1.0",
+      "title": "카탈로그 발견성 지표 (참고)",
+      "effectiveDate": "2026-07-17",
+      "definition": "목록 메타데이터 충실도 8지표(식별자·제목·설명·발행자·라이선스·키워드·날짜 기재율, URL 형식 유효율)의 평균 = catalogMetadataReadinessScore. AIRD MMI가 아니며 Q-Tier·DM 판정에 사용하지 않는 참고 지표."
+    },
+    {
+      "ruleId": "column-type-observation-v1.0",
+      "title": "컬럼 유형 관측 (예시값 기반)",
+      "effectiveDate": "2026-07-30",
+      "definition": "예시값 표본에서 관측한 유형 라벨(INTEGER/NUMBER/STRING/DATE_LIKE/BOOL_LIKE/EMPTY). 표본 한정 관찰이며 전체 값의 유형을 보증하지 않는다. 판정 분모(표본 범위)는 소속 테이블의 scan_scope·rows_scanned를 따른다.",
+      "status": "active"
+    },
+    {
+      "ruleId": "example-extraction-v1.0",
+      "title": "예시값 추출 방법 기록",
+      "effectiveDate": "2026-07-30",
+      "definition": "예시값(최대 10)은 결정론적으로 재현 가능해야 하며 추출 방법을 exampleMethod로 위장 없이 기록한다. 표준 방법은 HASH_BOTTOM_K_DISTINCT(asset·table·sheet·ordinal·raw_value의 SHA-256 최소 k, UTF-8, 사전 중복 제거). 외부 제공분은 실제 방법(FIRST_DISTINCT_UP_TO_10 등)을 그대로 기록한다. 예시값은 전체 분포·품질을 대표하지 않는다.",
+      "status": "active"
+    },
+    {
+      "ruleId": "sample-safety-v1.0",
+      "title": "예시값 안전 판정",
+      "effectiveDate": "2026-07-30",
+      "definition": "컬럼명 사전과 값 패턴(전화·이메일·주민등록번호형)의 이중 탐지. WITHHELD(비공개)·REVIEW_REQUIRED(검토 전 비공개)·CLEAR. 판정을 통과하지 않은 원본 값은 영구 저장·반환하지 않는다. 시설명·기관명·기관 주소는 일률 차단하지 않는다(문맥 규칙).",
+      "status": "active"
+    },
+    {
+      "ruleId": "structure-status-v1.0",
+      "title": "구조 관측 커버리지 상태",
+      "effectiveDate": "2026-07-30",
+      "definition": "자산별 상태(AVAILABLE/NOT_COLLECTED/QUEUED/COLLECTING/SOURCE_UNAVAILABLE/UNSUPPORTED_FORMAT/ACCESS_RESTRICTED/COLLECTION_FAILED/API_STRUCTURE_NOT_SUPPORTED_YET)와 레코드 집계(전 자산 성공=AVAILABLE, 일부=PARTIAL). 미수집은 품질 문제가 아니라 수집 순번이다.",
+      "status": "active"
+    },
+    {
+      "ruleId": "plan-assembly-v1.0",
+      "title": "활용 계획 초안 조립 (결정론)",
+      "effectiveDate": "2026-08-03",
+      "definition": "build_data_plan Tool의 계획 조립 규칙. LLM 없이 결정론적으로 수행한다: 목적 문장에서 제한 어휘 규칙으로 검색어·지역을 추출하고, search_datasets 결과 상위 후보에 제목·주제·관측 컬럼 패턴으로 역할(PRIMARY/DEMAND/SUPPLY/SPATIAL/TEMPORAL/REFERENCE/RELATED)을 배정하며, 후보 2건 이상에서 관측된 컬럼 패턴만 예상 결합 키(CANDIDATE_ONLY)로 제시한다. 산출은 항상 초안(DRAFT)이고 품질(NOT_ASSESSED)·결합 가능성·분석 충분성을 확정하지 않는다."
+    }
+  ]
+}

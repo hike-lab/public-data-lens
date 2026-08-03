@@ -1,0 +1,50 @@
+{
+  "id": "case-01-heatwave",
+  "title": "폭염 취약지역 분석",
+  "purpose": "여름철 폭염에 취약한 지역을 찾아 무더위 쉼터·그늘막 등 대응 인프라의 공백을 진단하고 싶다.",
+  "metadata": {
+    "createdAt": "2026-07-17",
+    "sourceSnapshot": "2026-06",
+    "promptVersion": "build-data-plan-v1.0",
+    "model": "claude-fable-5 (Claude Code, MCP 호스트)",
+    "humanReviewed": false,
+    "revalidatedAt": null
+  },
+  "purposeBreakdown": [
+    "피해 실태: 지역별 온열질환자·폭염 일수 파악",
+    "대응 인프라 공급: 무더위 쉼터·그늘막의 위치와 규모",
+    "취약 인구 수요: 독거노인 등 폭염 취약계층 분포",
+    "공백 진단: 수요 대비 인프라가 부족한 지역 식별"
+  ],
+  "candidates": [
+    {"recordId": "15077974", "role": "피해 실태(전국)", "whySelected": "행정안전부 통계연보의 지역별 폭염 인명피해(온열질환자) — 전국 단위 피해 지표를 제공하는 API"},
+    {"recordId": "15077962", "role": "노출 강도(전국)", "whySelected": "주요 도시 폭염 일수 — 기상 노출의 지역 간 비교 기준"},
+    {"recordId": "15125647", "role": "대응 인프라(예시: 성남)", "whySelected": "무더위(한파)쉼터 현황 — 쉼터 데이터는 시군구 단위로 분산 등재되므로 대상 지역별 검색 필요(목록 41건 확인)"},
+    {"recordId": "15127915", "role": "대응 인프라(예시: 서울)", "whySelected": "서울특별시 그늘막 현황 — 보행 구간의 임시 대응 시설"},
+    {"recordId": "15130199", "role": "취약 인구(예시: 강원)", "whySelected": "지자체별 독거노인 현황 — 광역 단위 집계로 취약계층 수요 근사"}
+  ],
+  "complementaryData": [
+    {"need": "대상 지역의 쉼터·그늘막 데이터", "how": "search_datasets에 region 필터 + '무더위 쉼터'/'그늘막' 질의 (각각 41건·50건 등재 확인)"},
+    {"need": "인구 통계(고령자 비율)", "how": "'고령자 인구' 질의 — 국가데이터처 SGIS 통계주제도 등 38건"}
+  ],
+  "expectedJoinKeys": [
+    {"key": "행정구역(시군구·행정동)", "inferred": true, "note": "쉼터·독거노인 데이터가 행정동 수준 주소를 담고 있을 것으로 예상 — 실제 컬럼은 미확인"},
+    {"key": "좌표(위도·경도)", "inferred": true, "note": "쉼터·그늘막 위치 데이터에 좌표가 포함될 것으로 예상 — 파일을 열어야 확정 가능"}
+  ],
+  "unverified": [
+    "각 파일의 실제 컬럼 구성·좌표계·결측률",
+    "통계연보 API의 시계열 범위와 갱신 주기",
+    "쉼터 데이터의 시군구 간 스키마 일관성(표준데이터 여부 확인 필요)"
+  ],
+  "limitations": [
+    "본 사례는 목록 메타데이터만으로 작성되었으며 실제 데이터 내용·품질·결합 가능성은 보증되지 않는다",
+    "무더위 쉼터는 전국 단일 데이터셋이 아니라 지자체별 분산 등재 — 전국 분석에는 다수 파일 수집·정합 작업이 필요"
+  ],
+  "toolTrace": [
+    {"tool": "search_datasets", "args": {"query": "무더위 쉼터"}, "resultSummary": "41건, 상위: 대전 유성구·인천 서해구·성남시 쉼터 현황"},
+    {"tool": "search_datasets", "args": {"query": "폭염"}, "resultSummary": "160건, 상위: 행안부 온열질환자·폭염 일수 API"},
+    {"tool": "search_datasets", "args": {"query": "그늘막"}, "resultSummary": "50건"},
+    {"tool": "search_datasets", "args": {"query": "독거노인 현황"}, "resultSummary": "69건"},
+    {"tool": "get_dataset", "args": {"recordId": "15077974", "view": "card"}, "resultSummary": "API/행정안전부, 완전성 0.73(API 프로파일)"}
+  ]
+}

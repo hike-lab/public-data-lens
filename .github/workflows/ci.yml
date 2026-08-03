@@ -1,0 +1,57 @@
+# CI — 서버 테스트·표면 스모크·웹 빌드·compose 검증.
+# 개발 저장소와 공개 릴리스 스냅샷 양쪽에서 동일하게 동작한다
+# (컨시어지 모듈 부재 시 관련 테스트는 자동 수집 제외 — importorskip 가드).
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  server:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 의존성 설치 — requirements.lock 재현
+        run: |
+          pip install -r apps/server/requirements.lock
+          pip install --no-deps -e "apps/server[dev]"
+      - name: 수용 기준 테스트 (카탈로그 미빌드 신선 상태)
+        run: cd apps/server && python -m pytest -q
+      - name: 표면 스모크 — 코어 REST 라우트·MCP 서버 import
+        run: |
+          cd apps/server && python - <<'EOF'
+          from datanav.api.rest import app
+          paths = {getattr(r, "path", "") for r in app.routes}
+          for must in ("/api/status", "/api/search", "/projects/public-data-lens/dataset/{list_key}"):
+              assert must in paths, f"코어 라우트 누락: {must}"
+          import datanav.api.mcp_server  # noqa: F401 — Tool 정의 로드 검증
+          print("코어 라우트·MCP import OK")
+          EOF
+
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: 웹 빌드 (코어 표면)
+        run: cd apps/web && npm ci && VITE_SURFACE=core npm run build
+
+  compose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: prod compose 구성 유효성
+        run: >
+          GATEWAY_REAL_IP_FROM=10.0.0.0/8 DATANAV_MCP_ALLOWED_HOSTS=service.datahub.kr
+          docker compose -f docker-compose.prod.yml config --quiet
+      - name: fail-closed — 보안 필수 env 미지정 시 구성이 거부되어야 한다
+        run: "! docker compose -f docker-compose.prod.yml config --quiet 2>/dev/null"
+      - name: 게이트웨이 real_ip 전개 스크립트 문법
+        run: sh -n apps/gateway/10-real-ip.sh

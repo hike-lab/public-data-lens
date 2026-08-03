@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "datanav": {
+      "command": ".venv/bin/python",
+      "args": ["-m", "datanav.api.mcp_server"],
+      "env": {
+        "DATANAV_ROOT": "."
+      }
+    }
+  }
+}

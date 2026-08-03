@@ -1,0 +1,124 @@
+# 공개 배포(A 스택) — gateway + mcp + api(정본 URI 해소) + 코어 웹(비생성형)을 노출한다.
+#
+# 실행:  docker compose -f docker-compose.prod.yml up -d --build
+# 갱신:  COMPOSE_FILE=docker-compose.prod.yml scripts/monthly_update.sh <CSV> <YYYY-MM>
+#
+# 전제:
+#  - TLS는 상위 LB/프록시에서 종단한다(커스텀 커넥터는 https 필수).
+#  - 보안 필수 env 2종(GATEWAY_REAL_IP_FROM·DATANAV_MCP_ALLOWED_HOSTS)은 미지정 시 기동이 실패한다 —
+#    조용한 fail-open(전체 사용자 단일 rate limit 버킷, Host 미검증)을 막기 위한 의도된 동작.
+#  - 게이트웨이는 기본 127.0.0.1에 바인딩한다 — LB가 다른 호스트면 GATEWAY_BIND에 내부 IP를 지정한다.
+#  - api는 ./data에 uid 10001(비루트)로 쓴다 — 최초 배포 시 `chown -R 10001:10001 data` 필요.
+#  - 카탈로그는 배포 전에 빌드되어 있어야 한다(scripts/monthly_update.sh 또는 build_catalog.py).
+#  - api·mcp는 단일 워커 전제(rate limit이 프로세스 메모리 기반) — 복제 수는 1로 유지한다.
+#
+# 공개 표면: /(코어 웹) · /projects/public-data-lens/mcp · /projects/public-data-lens/** · GET /api/**(코어 웹용 REST) · /privacy
+# 비공개: /api/concierge*(404, 생성형은 별도 스택) · /api의 비GET 메서드(403). ANTHROPIC_API_KEY도 불필요하다.
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"   # §10: 컨테이너 로그도 무한 보존하지 않는다
+    max-file: "5"
+
+services:
+  api:
+    build: apps/server
+    environment:
+      DATANAV_TRUST_PROXY: "1"
+      # 웹은 같은 게이트웨이 뒤(동일 출처) — 기본은 CORS 비허용(교차 출처 호출 차단)
+      DATANAV_CORS_ORIGINS: ${DATANAV_CORS_ORIGINS:-}
+      DATANAV_RATE_LIMIT_PER_MIN: ${DATANAV_RATE_LIMIT_PER_MIN:-120}
+      # 관측 예시값 공개(S0-2 법적 확인 후 .env에서 1로) — api·mcp 양쪽에 전달해야 한다
+      DATANAV_EXAMPLES_PUBLIC: ${DATANAV_EXAMPLES_PUBLIC:-0}
+      # §10 익명 사용 로그(기본 켬)와 익명 식별자 HMAC 키 — 미지정 시 데이터 볼륨에 1회 생성해
+      # 영속한다(재시작에도 캡·지표 연속). 임시 키로 동작하는 것은 볼륨이 읽기 전용인 mcp뿐.
+      DATANAV_USAGE_LOG: ${DATANAV_USAGE_LOG:-1}
+      DATANAV_ANON_HMAC_KEY: ${DATANAV_ANON_HMAC_KEY:-}
+      # 월간 빌드 시 SHACL 검증 표본 수(0=전수) — docker compose run api 빌드에도 적용
+      DATANAV_SHACL_SAMPLE: ${DATANAV_SHACL_SAMPLE:-500}
+    volumes:
+      - ./data:/app/data
+      - ./docs:/app/docs:ro  # 개인정보 고지문 서빙용
+    # 루트FS 쓰기 봉쇄 — 쓰기는 데이터 볼륨과 /tmp(tmpfs)로만 한정한다
+    read_only: true
+    tmpfs:
+      - /tmp
+    # 이미지의 비루트 사용자(uid 10001) 전제 — 권한 상승 봉쇄
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging: *logging
+    restart: unless-stopped
+    healthcheck:
+      # 카탈로그 미빌드(503)면 unhealthy — 배포 전 빌드가 전제 조건이다
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://127.0.0.1:8000/api/status', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  mcp:
+    build: apps/server
+    command: ["python", "-m", "datanav.api.mcp_server", "--http"]
+    environment:
+      DATANAV_MCP_HOST: 0.0.0.0
+      DATANAV_MCP_PORT: "8300"
+      # 서비스 도메인(쉼표 구분) — DNS 리바인딩 보호(Host 헤더 검증). 공개 배포 필수라 미지정 시 기동 실패.
+      DATANAV_MCP_ALLOWED_HOSTS: "${DATANAV_MCP_ALLOWED_HOSTS:?서비스 도메인을 지정하세요 — 예. service.datahub.kr}"
+      # 관측 예시값 공개 — api와 동일 값으로 유지(판정 이중화 금지)
+      DATANAV_EXAMPLES_PUBLIC: ${DATANAV_EXAMPLES_PUBLIC:-0}
+    volumes:
+      - ./data:/app/data:ro  # 읽기 전용 — MCP는 카탈로그를 조회만 한다
+    # 루트FS 쓰기 봉쇄 — MCP는 어떤 쓰기도 하지 않는다(/tmp만 tmpfs)
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging: *logging
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; socket.create_connection(('127.0.0.1', 8300), 2)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  # 코어 웹(비생성형: 검색·비교·변경 피드·활용 사례) — 컨시어지 탭 없는 빌드
+  web:
+    build:
+      context: apps/web
+      args:
+        VITE_SURFACE: core
+    # nginx 마스터는 워커 강등에 루트가 필요 — 권한 상승만 봉쇄
+    security_opt:
+      - no-new-privileges:true
+    logging: *logging
+    restart: unless-stopped
+
+  gateway:
+    build: apps/gateway
+    security_opt:
+      - no-new-privileges:true
+    depends_on:
+      - api
+      - mcp
+      - web
+    environment:
+      # LB/프록시 신뢰 대역(CIDR, 쉼표 구분 다중 가능). 필수 — 미지정 시 기동 실패(조용한 공유 버킷 방지).
+      # 직접 노출(LB 없음)이면 127.0.0.1(no-op)을 명시한다.
+      GATEWAY_REAL_IP_FROM: "${GATEWAY_REAL_IP_FROM:?LB 내부 대역 CIDR을 지정하세요(쉼표 구분, 직접 노출이면 127.0.0.1)}"
+    ports:
+      # 기본 루프백 바인딩 — 원 서버 직접 접근(TLS 우회)을 차단한다. LB가 다른 호스트면 GATEWAY_BIND에 내부 IP 지정.
+      - "${GATEWAY_BIND:-127.0.0.1}:${GATEWAY_PORT:-8088}:80"
+    logging: *logging
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

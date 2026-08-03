@@ -1,0 +1,91 @@
+# 공개 게이트웨이(A 스택) — MCP·정본 URI·코어 웹(/)·GET /api/**(코어 웹용 REST)·고지를 노출한다.
+# TLS는 상위 LB/프록시에서 종단한다(커스텀 커넥터는 https 필수).
+# real_ip 설정(set_real_ip_from 등)은 10-real-ip.sh가 GATEWAY_REAL_IP_FROM(쉼표 구분 다중 CIDR)에서
+# /etc/nginx/conf.d/00-real-ip.conf로 전개한다 — LB가 붙인 X-Forwarded-For에서 실제 클라이언트 IP를
+# 복원해야 IP당 rate limit이 사용자 단위로 동작한다.
+
+# §10 개인정보 고지 준수: 원 IP를 저장하지 않는 익명 접근 로그.
+# $request 대신 메서드·경로만 기록한다 — 쿼리 문자열(검색어)은 로그에 남기지 않는다.
+log_format datanav_anon '$time_iso8601 "$request_method $uri" $status $body_bytes_sent $request_time';
+
+# 옵트아웃(DNT/GPC/X-Datanav-No-Log) 요청은 게이트웨이 접근 로그에서도 제외한다(고지문과 일치).
+map "$http_dnt:$http_sec_gpc:$http_x_datanav_no_log" $datanav_loggable {
+    ~(^|:)1(:|$)  0;
+    default       1;
+}
+
+limit_req_zone $binary_remote_addr zone=mcp_zone:10m rate=2r/s;
+limit_req_zone $binary_remote_addr zone=general_zone:10m rate=5r/s;
+
+server {
+    listen 80;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    access_log /var/log/nginx/access.log datanav_anon if=$datanav_loggable;
+    # 한도 초과 메시지에는 클라이언트 IP가 포함되므로 notice로 내려 error 로그(warn 이상)에서 제외한다.
+    limit_req_log_level notice;
+    error_log /var/log/nginx/error.log warn;
+
+    add_header X-Content-Type-Options nosniff always;
+
+    location = /healthz {
+        access_log off;
+        default_type text/plain;
+        return 200 "ok\n";
+    }
+
+    # 원격 MCP(streamable HTTP) — 커넥터 등록 URL: https://<도메인>/projects/public-data-lens/mcp
+    # 프로젝트 프리픽스 아래로 노출하고 내부 /mcp로 재작성한다(프리픽스가 정본 location보다 길어 우선 매칭).
+    location /projects/public-data-lens/mcp {
+        limit_req zone=mcp_zone burst=20 nodelay;
+        proxy_pass http://mcp:8300/mcp;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_buffering off;
+        proxy_read_timeout 300s;
+    }
+
+    # §7 정본 URI 디레퍼런싱 — service.datahub.kr/projects/public-data-lens/... 를 API가 해소한다
+    location /projects/public-data-lens/ {
+        limit_req zone=general_zone burst=20 nodelay;
+        proxy_pass http://api:8000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        # real_ip 복원 후의 $remote_addr — API의 DATANAV_TRUST_PROXY=1과 짝
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    # 생성형 컨시어지는 이 배포에 포함되지 않는다(별도 서비스) —
+    # 서버 플래그(DATANAV_CONCIERGE_ENABLED=0)와 게이트웨이 차단의 이중 방어.
+    location /api/concierge {
+        return 404;
+    }
+
+    # 코어 웹용 REST(비생성형·읽기 전용) — 공개 계약은 여전히 MCP이며 REST는 웹 전용 표면이다.
+    location /api/ {
+        limit_req zone=general_zone burst=30 nodelay;
+        limit_except GET { deny all; }
+        proxy_pass http://api:8000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    # 친화 경로 별칭 — 고지문 정본 경로(/api/resources/privacy)로 전달
+    location = /privacy {
+        limit_req zone=general_zone burst=10 nodelay;
+        rewrite ^ /api/resources/privacy break;
+        proxy_pass http://api:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    # 코어 웹(비생성형 SPA — 검색·비교·변경 피드·활용 사례)
+    location / {
+        limit_req zone=general_zone burst=30 nodelay;
+        proxy_pass http://web:80;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+    }
+}
