@@ -1,0 +1,29 @@
+[project]
+name = "datanav"
+version = "0.1.0"
+description = "공공데이터 내비게이터 — AIRD 정본 파이프라인 + MCP 서버 (설계서 v1.0)"
+requires-python = ">=3.11"
+dependencies = [
+    "mcp>=1.20,<2",  # 2.0에서 mcp.server.fastmcp 경로 제거 — 검증된 1.x 고정
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "pydantic>=2.7",
+    "rdflib>=7.0",
+    "pyshacl>=0.26",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "httpx>=0.27", "jsonschema>=4.21"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["datanav*"]
+
+[tool.setuptools.package-data]
+datanav = ["pipeline/shapes/*.ttl", "rules/*.json", "prompts/*.md", "spec/*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,0 +1,70 @@
+@prefix sh:   <http://www.w3.org/ns/shacl#> .
+@prefix dcat: <http://www.w3.org/ns/dcat#> .
+@prefix dct:  <http://purl.org/dc/terms/> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix kdp:  <https://service.datahub.kr/projects/public-data-lens/ns/kdp#> .
+@prefix :     <https://service.datahub.kr/projects/public-data-lens/shapes/catalog/1.0#> .
+
+# 공공데이터 내비게이터 SHACL 셰이프 v1.0
+# Violation = 배포 차단(치명), Warning = 리포트만
+
+:DatasetShape a sh:NodeShape ;
+    sh:targetClass dcat:Dataset ;
+    sh:property [
+        sh:path dct:title ;
+        sh:minCount 1 ;
+        sh:datatype xsd:string ;
+        sh:minLength 1 ;
+        sh:severity sh:Violation ;
+        sh:message "목록명(dct:title)은 필수" ;
+    ] ;
+    sh:property [
+        sh:path dct:identifier ;
+        sh:minCount 1 ;
+        sh:severity sh:Violation ;
+        sh:message "목록키(dct:identifier)는 필수" ;
+    ] ;
+    sh:property [
+        sh:path kdp:listType ;
+        sh:minCount 1 ;
+        sh:in ( "FILE" "API" "STD" ) ;
+        sh:severity sh:Violation ;
+        sh:message "목록유형은 FILE/API/STD 중 하나" ;
+    ] ;
+    sh:property [
+        sh:path kdp:evidenceLevel ;
+        sh:hasValue "CATALOG_METADATA_ONLY" ;
+        sh:severity sh:Violation ;
+        sh:message "개별 데이터셋의 근거 수준은 CATALOG_METADATA_ONLY 고정(§3.1)" ;
+    ] ;
+    sh:property [
+        sh:path dcat:landingPage ;
+        sh:nodeKind sh:IRI ;
+        sh:severity sh:Violation ;
+        sh:message "목록 URL은 IRI여야 함" ;
+    ] ;
+    sh:property [
+        sh:path dct:description ;
+        sh:minCount 1 ;
+        sh:severity sh:Warning ;
+        sh:message "설명 미기재(권고)" ;
+    ] ;
+    sh:property [
+        sh:path dcat:keyword ;
+        sh:minCount 1 ;
+        sh:severity sh:Warning ;
+        sh:message "키워드 미기재(권고)" ;
+    ] .
+
+:CatalogShape a sh:NodeShape ;
+    sh:targetClass dcat:Catalog ;
+    sh:property [
+        sh:path dct:title ;
+        sh:minCount 1 ;
+        sh:severity sh:Violation ;
+    ] ;
+    sh:property [
+        sh:path kdp:datasetCount ;
+        sh:minCount 1 ;
+        sh:severity sh:Violation ;
+    ] .

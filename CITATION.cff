@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+message: "연구·보고서에서 본 소프트웨어를 인용할 때 아래 정보를 사용해 주세요."
+title: "공공데이터 렌즈 (Public Data Lens)"
+abstract: >-
+  하고 싶은 일을 말하면 AI Ready 관점으로 정밀하게 투영하는 공공데이터 초점 레이어.
+  공공데이터포털 월간 목록을 정본 JSON-LD/DCAT 계층으로 정규화하고, 버전 관리되는
+  결정론적 판정 규칙과 함께 MCP(Model Context Protocol)로 제공하는
+  AIRD(AI-Ready Data) 표준 실증 프로젝트.
+type: software
+authors:
+  - name: "중앙대학교 HIKE 연구실"
+license: MIT
+version: 1.0.0-beta
+date-released: "2026-08-03"
+repository-code: "https://github.com/hike-lab/public-data-lens"
+keywords:
+  - open-data
+  - model-context-protocol
+  - ai-ready-data
+  - dcat
+  - json-ld
+  - korea
