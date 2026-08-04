@@ -2,7 +2,7 @@
 
 > `DESIGN.md`를 구현 가능한 형태로 옮긴다. 원칙의 근거는 `DESIGN.md`에 있다.
 >
-> 이 문서의 모든 enum·필드명은 **`apps/server/datanav/spec/tool-schemas-v1.4.0.json`이 정본**이다.
+> 이 문서의 모든 enum·필드명은 **`apps/server/datanav/spec/tool-schemas-v1.7.0.json`이 정본**이다.
 > 문서와 계약이 어긋나면 계약이 이긴다. 어긋남을 발견하면 이 문서를 고친다.
 
 ---
@@ -48,7 +48,7 @@
 **빌드 시 가드를 넣는다.** 계약 enum과 라벨 정의를 대조해 누락이 있으면 빌드를 실패시킨다.
 
 ```
-계약 파일(tool-schemas-v1.4.0.json)에서 enum 추출
+계약 파일(tool-schemas-v1.7.0.json)에서 enum 추출
   → labels.js의 키와 대조
   → 누락 발견 시 빌드 실패
 ```

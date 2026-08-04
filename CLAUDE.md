@@ -23,7 +23,7 @@ docs/          설계서·부속명세·매핑표·배포·호환성·개인정�
 | `DESIGN.md` | 웹 표면의 제품 설계 원칙 |
 | `docs/UI_IMPLEMENTATION_GUIDE.md` | 필드 매핑·컴포넌트 계약·Phase·DoD |
 | `docs/부속명세_v1.0.md` | Tool별 JSON Schema + 공통 계약 |
-| `apps/server/datanav/spec/tool-schemas-v1.6.0.json` | **enum·필드의 정본** |
+| `apps/server/datanav/spec/tool-schemas-v1.7.0.json` | **enum·필드의 정본** |
 
 UI 작업 시 `DESIGN.md`와 `docs/UI_IMPLEMENTATION_GUIDE.md`를 먼저 읽는다.
 문서와 계약이 어긋나면 계약이 이긴다.

@@ -8,7 +8,7 @@ schemaVersion은 응답 봉투 meta.schemaVersion으로 전달된다.
 """
 from __future__ import annotations
 
-SPEC_VERSION = "1.6.0"
+SPEC_VERSION = "1.7.0"
 
 # ---------------------------------------------------------------- $defs
 DEFS = {

@@ -197,7 +197,7 @@ def search_datasets(
     includeInferred: Annotated[bool, Field(description="true면 제목·기관·설명에서 추론된 지역 매칭 포함, false면 공간범위 명시(EXPLICIT_SPATIAL)만")] = True,
     updatedAfter: Annotated[str | None, Field(description="이 날짜 이후 수정된 목록만(YYYY-MM-DD)")] = None,
     cursor: Annotated[str | None, Field(description="이전 응답의 nextCursor(불투명 토큰, 현재 스냅샷에 귀속)")] = None,
-    pageSize: Annotated[int, Field(description="페이지 크기(1~100)", ge=1, le=100)] = 20,
+    pageSize: Annotated[int, Field(description="페이지 크기(1~100, 기본 10). 탐색 용도는 5~10이면 충분하다 — 더 필요할 때만 늘리거나 cursor로 다음 페이지를 요청하라(v1.7: 기본 20→10)", ge=1, le=100)] = 10,
     interpret: Annotated[bool, Field(description="true면 query의 지역·포맷·주기·유형 토큰을 결정론 규칙(query-interpret-v1.0)으로 필터에 이관하고 근거를 interpretedFilters[]로 반환(v1.5)")] = False,
     sort: Annotated[str | None, Field(description="정렬 선택(v1.6): relevance(기본, 질의 시)|modified(질의로 거르되 최신 수정순). 미지정 시 기존 동작")] = None,
 ) -> str:
@@ -258,7 +258,7 @@ def get_catalog_stats(
 @mcp.tool(annotations=_RO)
 def search_by_columns(
     columnKeywords: Annotated[list[str], Field(description="원본 컬럼명에 부분 일치할 키워드(1~5개, 각 50자 이하) — 모두 충족하는 데이터셋만 반환(AND)", min_length=1, max_length=5)],
-    pageSize: Annotated[int, Field(description="반환 개수(1~100)", ge=1, le=100)] = 20,
+    pageSize: Annotated[int, Field(description="반환 개수(1~100, 기본 10). 탐색 용도는 5~10이면 충분하다(v1.7: 기본 20→10)", ge=1, le=100)] = 10,
 ) -> str:
     """원본 컬럼 기준 데이터셋 검색(v1.3) — 예: ['위도','경도'], ['사업자등록번호'].
     결과의 matchedColumns가 검색 근거(일치한 원본 컬럼명)다. 검색 모집단은 구조가

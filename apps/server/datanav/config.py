@@ -18,7 +18,7 @@ CURRENT_POINTER = CATALOG_DIR / "current.json"
 # §7 확정 네임스페이스 (영구 불변)
 BASE_URI = "https://service.datahub.kr/projects/public-data-lens"
 
-SCHEMA_VERSION = "1.6.0"
+SCHEMA_VERSION = "1.7.0"
 
 DISCLAIMER = (
     "본 결과는 공공데이터포털 목록 메타데이터 기반이며 "
