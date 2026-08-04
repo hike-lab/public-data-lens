@@ -74,11 +74,22 @@ export default function ConnectView() {
         <details open>
           <summary>Claude 웹 · 앱</summary>
           <ol className="mcp-steps">
-            <li><strong>설정 → 커넥터 → 커스텀 커넥터 추가</strong></li>
+            <li>웹(claude.ai)에서 <strong>설정 → 커넥터 → 커스텀 커넥터 추가</strong></li>
             <li>위 주소를 붙여넣고 추가</li>
             <li>대화에서 바로 질문 — 정형화된 활용 계획은 프롬프트 메뉴의 <code>build_data_plan</code></li>
             <li>연결 확인: "이 커넥터로 공공데이터 카탈로그 현황을 알려줘"</li>
           </ol>
+          <p className="connect-note connect-caveat">
+            Team·Enterprise 계정은 구성원 설정 페이지에 추가 메뉴가 없을 수 있습니다 —
+            조직 관리자가 커넥터를 추가하면 구성원은 <strong>설정 → 커넥터</strong>에서
+            '연결'로 활성화합니다. 데스크톱 앱은 Claude Code로 등록(아래)한 뒤
+            <strong> 설정 → 커넥터</strong>에서 활성화하는 방법도 있습니다.
+          </p>
+          <p className="connect-note">
+            처음 사용할 때 도구 호출마다 허용 여부를 묻는 것은 Claude의 기본 동작(정상)입니다.
+            허용 대화상자에서 <strong>항상 허용</strong>을 선택하면 이후에는 묻지 않습니다 —
+            이 서버의 도구는 전부 읽기 전용·멱등으로 선언되어 있어 데이터를 변경하지 않습니다.
+          </p>
         </details>
         <details>
           <summary>Claude Code (터미널)</summary>

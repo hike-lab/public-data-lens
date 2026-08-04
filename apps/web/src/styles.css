@@ -1292,7 +1292,9 @@ button:active:not(:disabled) { transform: var(--button-active-scale); }
 /* ---- 검색 셸 모바일: 셸 한 줄 + 버튼 전체 폭 ---- */
 @media (max-width: 720px) {
   .searchbar.unified { flex-wrap: wrap; }
-  .search-shell { flex: 1 1 100%; }
+  /* 좁은 화면: 모드 탭과 입력을 두 줄로 — placeholder 예시가 잘리지 않게 입력이 전폭을 갖는다 */
+  .search-shell { flex: 1 1 100%; flex-wrap: wrap; padding: 6px 6px 2px; border-radius: 18px; }
+  .search-shell input { flex: 1 1 100%; }
   .searchbar.unified > button[type='submit'] { flex: 1 1 auto; width: 100%; }
   .seg button { padding: 0 12px; font-size: 12.5px; }
   .toolbar { align-items: flex-start; }

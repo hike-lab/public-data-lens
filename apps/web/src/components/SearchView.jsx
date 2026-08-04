@@ -277,7 +277,7 @@ export default function SearchView({
               key="kw"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="데이터명이나 기관명 — 예: 전기차 충전소"
+              placeholder="데이터명·기관명 — 예: 전기차 충전소"
               maxLength={500}
             />
           )}
@@ -286,7 +286,7 @@ export default function SearchView({
               key="col"
               value={colQuery}
               onChange={(e) => setColQuery(e.target.value)}
-              placeholder="데이터에 있어야 할 컬럼을 쉼표로 — 예: 사업자등록번호, 업종"
+              placeholder="필요한 컬럼 — 예: 사업자등록번호, 업종"
               maxLength={200}
             />
           )}
@@ -295,7 +295,7 @@ export default function SearchView({
               key="pp"
               value={purposeQuery}
               onChange={(e) => setPurposeQuery(e.target.value)}
-              placeholder="하려는 일을 문장으로 적어보세요 — 예: 폐교를 커뮤니티 시설로 활용하는 사업 검토"
+              placeholder="하려는 일 — 예: 폐교 활용 사업 검토"
               maxLength={200}
             />
           )}
