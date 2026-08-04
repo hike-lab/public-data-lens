@@ -1,0 +1,49 @@
+{
+  "id": "case-03-school-safety",
+  "title": "어린이 통학 안전 진단",
+  "purpose": "어린이 보호구역의 안전 시설과 사고 이력을 결합해 통학로 위험 구간을 진단하고 싶다.",
+  "metadata": {
+    "createdAt": "2026-07-17",
+    "sourceSnapshot": "2026-06",
+    "promptVersion": "build-data-plan-v1.0",
+    "model": "claude-fable-5 (Claude Code, MCP 호스트)",
+    "humanReviewed": false,
+    "revalidatedAt": null
+  },
+  "purposeBreakdown": [
+    "기준 시설: 보호구역(스쿨존) 지정 현황",
+    "사고 이력: 스쿨존 내 어린이 교통사고 다발지역",
+    "안전 설비: CCTV·옐로카펫 등 시설 배치",
+    "수요 기준점: 초등학교 위치·규모"
+  ],
+  "candidates": [
+    {"recordId": "15142010", "role": "보호구역 지정(전국)", "whySelected": "경찰청 전국 보호구역 현황 API — 전국 단위 단일 출처(완전성 0.80, API 프로파일)"},
+    {"recordId": "15058311", "role": "사고 다발지역(전국)", "whySelected": "한국도로교통공단 어린이보호구역 내 어린이 교통사고 다발지역 API — 위험 구간의 직접 신호"},
+    {"recordId": "15118850", "role": "사고 통계(전국)", "whySelected": "최근 5년 스쿨존 내 어린이 교통사고 통계 FILE — 추세 분석용"},
+    {"recordId": "15101975", "role": "안전 설비(예시: 울주)", "whySelected": "어린이 보호구역 CCTV 현황 — 설비 데이터는 지자체별 분산(보호구역 관련 126건)"},
+    {"recordId": "15145793", "role": "행정동 통계(예시: 서울)", "whySelected": "행정동별 어린이 보호구역 지정 통계 — 행정동 단위 집계 결합 예시"}
+  ],
+  "complementaryData": [
+    {"need": "학교 위치·규모", "how": "'초등학교 현황' 질의(224건) — 교육청·지자체별 등재"},
+    {"need": "보행자 사고 전반", "how": "'보행자 교통사고' 질의(175건) — 어린이 외 보행 위험과의 비교"}
+  ],
+  "expectedJoinKeys": [
+    {"key": "좌표(위도·경도)", "inferred": true, "note": "보호구역·사고 다발지역·CCTV 데이터 모두 좌표 보유가 예상되나 좌표계 일치 여부 미확인"},
+    {"key": "학교명·시설명", "inferred": true, "note": "보호구역 대상 시설명과 학교 현황의 명칭 표기 일치 여부는 미확인"}
+  ],
+  "unverified": [
+    "사고 다발지역 API의 집계 단위(반경·격자)와 갱신 주기",
+    "CCTV 데이터의 지자체 간 스키마 일관성",
+    "보호구역 API와 지자체 FILE 데이터 간 중복·불일치 정도"
+  ],
+  "limitations": [
+    "목록 메타데이터 기반이며 실제 좌표 정밀도·결합 가능성은 보증되지 않는다",
+    "설비(CCTV 등) 데이터는 전국 통합본이 확인되지 않아 대상 지역별 수집이 필요하다"
+  ],
+  "toolTrace": [
+    {"tool": "search_datasets", "args": {"query": "어린이 보호구역"}, "resultSummary": "126건, 상위: 울주 CCTV·대구 위험요소 API·경찰청 전국 현황"},
+    {"tool": "search_datasets", "args": {"query": "스쿨존 교통사고"}, "resultSummary": "63건, 상위: 도로교통공단 다발지역·5년 통계"},
+    {"tool": "search_datasets", "args": {"query": "초등학교 현황"}, "resultSummary": "224건"},
+    {"tool": "compare_datasets", "args": {"recordIds": ["15142010", "15101975", "15058311"]}, "resultSummary": "전국 API 2종 + 지자체 FILE 1종 — 범위·유형·주기 차이 확인"}
+  ]
+}

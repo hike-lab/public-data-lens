@@ -1,0 +1,17 @@
+{
+  "rule": "query-interpret-v1.0",
+  "description": "검색어 → interpretedFilters 결정론 해석의 골든 케이스. 입력 문장과 기대 필터의 쌍 — 규칙 변경 시 이 파일과 테스트를 함께 갱신한다.",
+  "cases": [
+    {"query": "서울 무더위 쉼터 CSV", "expect": {"region": "KR-11", "format": "CSV"}, "rest": "무더위 쉼터"},
+    {"query": "부산광역시 어린이 보호구역", "expect": {"region": "KR-26"}, "rest": "어린이 보호구역"},
+    {"query": "주차장 JSON 월간", "expect": {"format": "JSON", "updateCycle": "MONTHLY"}, "rest": "주차장"},
+    {"query": "충남 API 관광지", "expect": {"region": "KR-44", "listType": "API"}, "rest": "관광지"},
+    {"query": "엑셀 병원 현황", "expect": {"format": "XLSX"}, "rest": "병원 현황"},
+    {"query": "제주도 전기차 충전소 매년", "expect": {"region": "KR-49", "updateCycle": "ANNUAL"}, "rest": "전기차 충전소"},
+    {"query": "미세먼지 측정소", "expect": {}, "rest": "미세먼지 측정소"},
+    {"query": "서울 부산 인구", "expect": {"region": "KR-11"}, "rest": "부산 인구",
+     "note": "축당 최초 1토큰 — 두 번째 지역어는 질의에 남는다"},
+    {"query": "표준 산업 분류", "expect": {"listType": "STD"}, "rest": "산업 분류"},
+    {"query": "수시 갱신 데이터", "expect": {"updateCycle": "IRREGULAR"}, "rest": "갱신 데이터"}
+  ]
+}

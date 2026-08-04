@@ -1,0 +1,49 @@
+{
+  "id": "case-05-tourism-commerce",
+  "title": "관광·상권 연계 분석",
+  "purpose": "관광지 방문객 흐름이 주변 상권(전통시장·숙박·음식점)에 미치는 효과를 분석하고 싶다.",
+  "metadata": {
+    "createdAt": "2026-07-17",
+    "sourceSnapshot": "2026-06",
+    "promptVersion": "build-data-plan-v1.0",
+    "model": "claude-fable-5 (Claude Code, MCP 호스트)",
+    "humanReviewed": false,
+    "revalidatedAt": null
+  },
+  "purposeBreakdown": [
+    "유입: 관광지별 방문객 규모·시계열",
+    "상권 구조: 상권 영역·업종 구성",
+    "수혜 업종: 전통시장·숙박업 분포",
+    "연계: 관광지-상권의 공간적 근접 분석"
+  ],
+  "candidates": [
+    {"recordId": "15123028", "role": "유입(예시: 홍천)", "whySelected": "월별 관광지 방문객수(내국인) — 시계열 방문 데이터(방문객 관련 61건), 외국인편(15123031)과 세트"},
+    {"recordId": "15076394", "role": "상권 구조(예시: 서울)", "whySelected": "서울시 상권분석서비스(영역-상권) — 상권 경계 데이터('상권' 1,378건 중 영역 정의 데이터)"},
+    {"recordId": "15062900", "role": "수혜 업종(예시: 경남)", "whySelected": "전통시장 API(337건 등재) — 시장 위치·정보"},
+    {"recordId": "15115066", "role": "수혜 업종(예시: 송파)", "whySelected": "숙박업 인허가 정보(342건 등재) — 체류형 수요의 공급 측 데이터"},
+    {"recordId": "15084870", "role": "관광 공급(예시: 하동)", "whySelected": "관광지 요금정보 현황 — 관광지 목록·속성의 지역 예시(관광지 178건)"}
+  ],
+  "complementaryData": [
+    {"need": "음식점 분포", "how": "'일반음식점' 인허가 질의 — 상권 업종 구성의 보완"},
+    {"need": "대상 지역 방문객 데이터", "how": "region 필터 + '관광지 방문객' 질의 — 지역별 등재 편차 확인 필요"}
+  ],
+  "expectedJoinKeys": [
+    {"key": "좌표·상권 영역(폴리곤)", "inferred": true, "note": "상권 영역과 관광지·시장 좌표의 공간 조인이 예상 경로 — 좌표계·포맷(SHP 여부) 미확인"},
+    {"key": "행정동", "inferred": true, "note": "방문객 통계가 관광지 단위인지 행정구역 단위인지 미확인 — 집계 수준 불일치 가능"}
+  ],
+  "unverified": [
+    "방문객 데이터의 측정 방식(통신사 추정/입장권)과 지역 간 비교 가능성",
+    "상권분석서비스 데이터의 이용 조건(대용량·갱신 주기)",
+    "관광지 데이터의 전국 표준 존재 여부"
+  ],
+  "limitations": [
+    "목록 메타데이터 기반이며 공간 결합·시계열 정합의 실현 가능성은 보증되지 않는다",
+    "방문객 데이터는 지역별 등재 편차가 커서 전국 비교에는 커버리지 확인이 선행되어야 한다"
+  ],
+  "toolTrace": [
+    {"tool": "search_datasets", "args": {"query": "관광지 방문객"}, "resultSummary": "61건, 상위: 홍천 월별 방문객(내국인/외국인)"},
+    {"tool": "search_datasets", "args": {"query": "상권"}, "resultSummary": "1,378건, 상위: 서울 상권분석서비스(영역-상권)"},
+    {"tool": "search_datasets", "args": {"query": "전통시장"}, "resultSummary": "337건"},
+    {"tool": "search_datasets", "args": {"query": "숙박업"}, "resultSummary": "342건"}
+  ]
+}

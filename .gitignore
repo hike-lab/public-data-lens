@@ -1,0 +1,38 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+
+# Node
+node_modules/
+dist/
+
+# 데이터 산출물 — 파이프라인으로 재생성 가능 (원본 CSV는 백업 zip에 보존)
+data/public_data_*.csv
+data/raw/*
+!data/raw/.gitkeep
+data/catalog/releases/
+data/catalog/current.json
+
+# 로컬 설정·잡동사니
+.claude/settings.local.json
+.DS_Store
+nohup.out
+*.log
+.env
+.env.*
+!.env.example
+data/catalog/*.tmp
+data/logs/
+data/observations/
+data/anon_hmac.key
+apps/web/dist-test-*/
+apps/web/test-results/
+apps/web/playwright-report/
+
+# evals 공개 범위 정책: 응답 원문 누적분은 미커밋, drift 리포트만 예외
+evals/results/**
+!evals/results/*/
+!evals/results/*/drift.md

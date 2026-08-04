@@ -1,0 +1,50 @@
+{
+  "id": "case-04-senior-access",
+  "title": "고령자 의료·교통 접근성 분석",
+  "purpose": "고령 인구 분포 대비 의료기관과 대중교통 접근성이 취약한 지역을 찾고 싶다.",
+  "metadata": {
+    "createdAt": "2026-07-17",
+    "sourceSnapshot": "2026-06",
+    "promptVersion": "build-data-plan-v1.0",
+    "model": "claude-fable-5 (Claude Code, MCP 호스트)",
+    "humanReviewed": false,
+    "revalidatedAt": null
+  },
+  "purposeBreakdown": [
+    "수요: 고령자 인구의 공간 분포",
+    "의료 공급: 의료기관(병원·의원)의 위치·규모",
+    "복지 인프라: 노인복지시설 분포",
+    "이동 수단: 버스 정류장·노선 접근성"
+  ],
+  "candidates": [
+    {"recordId": "15140449", "role": "수요(전국)", "whySelected": "국가데이터처 SGIS 통계주제도 — 65세 이상 고령자 인구 변화(완전성 0.88), 전국 공간 통계의 기준점"},
+    {"recordId": "15159781", "role": "의료 공급(예시: 영도)", "whySelected": "병원급 의료기관 병상수 현황 — 완전성 1.00(FILE 프로파일), 규모 지표까지 포함하는 드문 사례"},
+    {"recordId": "3046710", "role": "의료 공급(예시: 당진)", "whySelected": "의료기관 현황 — 의료기관 목록은 946건으로 가장 풍부, 지역별 수집 용이"},
+    {"recordId": "3073379", "role": "복지 인프라(예시: 도봉)", "whySelected": "노인복지시설 현황(209건 등재) — 의료 외 돌봄 접근성 보완"},
+    {"recordId": "15114229", "role": "이동 수단(예시: 세종)", "whySelected": "버스노선 및 버스정류장 — 접근성 계산의 교통 공급 측 데이터(190건 등재)"}
+  ],
+  "complementaryData": [
+    {"need": "대상 지역별 의료기관·정류장 데이터", "how": "region 필터로 시도별 수집 — '의료기관'(946건), '버스 정류장'(190건)"},
+    {"need": "응급의료 접근성", "how": "'응급의료기관' 질의 — 야간·응급 수요 별도 분석"}
+  ],
+  "expectedJoinKeys": [
+    {"key": "행정동 코드(SGIS)", "inferred": true, "note": "고령자 인구 통계는 행정동 단위로 예상 — 의료기관 주소의 행정동 매핑 작업 필요 가능성"},
+    {"key": "좌표(위도·경도)", "inferred": true, "note": "의료기관·정류장 데이터의 좌표 보유가 예상되나 실제 컬럼은 미확인"}
+  ],
+  "unverified": [
+    "SGIS 통계의 공간 단위(행정동/집계구)와 시점",
+    "의료기관 데이터의 진료과목 포함 여부(고령자 관련 과목 필터 가능성)",
+    "정류장 데이터의 노선·배차 정보 포함 여부(접근성 질 평가용)"
+  ],
+  "limitations": [
+    "목록 메타데이터 기반 후보 검토이며 접근성 계산의 실현 가능성은 실데이터 확인 후 판단해야 한다",
+    "의료기관·정류장 데이터의 시군구 간 스키마 차이로 전국 일괄 분석에는 정합 작업이 필요하다"
+  ],
+  "toolTrace": [
+    {"tool": "search_datasets", "args": {"query": "고령자 인구"}, "resultSummary": "38건, 상위: 국가데이터처 SGIS 고령자 인구 변화"},
+    {"tool": "search_datasets", "args": {"query": "의료기관"}, "resultSummary": "946건"},
+    {"tool": "search_datasets", "args": {"query": "노인복지시설"}, "resultSummary": "209건"},
+    {"tool": "search_datasets", "args": {"query": "버스 정류장"}, "resultSummary": "190건"},
+    {"tool": "get_dataset", "args": {"recordId": "15159781", "view": "card"}, "resultSummary": "완전성 1.00 — 병상수(규모) 포함 의료기관 데이터"}
+  ]
+}
