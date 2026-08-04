@@ -26,7 +26,9 @@ def test_guard_logs_tool_ms_and_query_cap(usage_caplog):
     long_q = "가" * 500
     result = mcp_server._guard(lambda: {"data": {"totalEstimate": 3}},
                                tool="search_datasets", q=long_q[:200])
-    assert result["data"]["totalEstimate"] == 3
+    # 반환은 컴팩트 JSON 문자열(들여쓰기 없음 — 호스트 LLM 토큰 절감)
+    assert "\n" not in result
+    assert json.loads(result)["data"]["totalEstimate"] == 3
     (entry,) = _lines(usage_caplog)
     assert entry["kind"] == "mcp"
     assert entry["tool"] == "search_datasets"
@@ -43,7 +45,7 @@ def test_guard_logs_error_code_without_traceback(usage_caplog):
     def boom():
         raise InvalidArgument("bad", {})
 
-    body = mcp_server._guard(boom, tool="get_dataset")
+    body = json.loads(mcp_server._guard(boom, tool="get_dataset"))
     assert body["error"]["code"] == "INVALID_ARGUMENT"
     (entry,) = _lines(usage_caplog)
     assert entry["error"] == "INVALID_ARGUMENT"
