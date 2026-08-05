@@ -70,6 +70,28 @@ CREATE TABLE changes (
 CREATE INDEX idx_changes_status ON changes(status);
 
 CREATE TABLE build_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+
+-- 계열 후보(family-candidate-v1.0, ADR-011). 후보는 판정이 아니다 —
+-- evidence_level·review_status 없이 소비하면 안 된다.
+CREATE TABLE families (
+    family_id TEXT PRIMARY KEY,
+    member_count INTEGER NOT NULL,
+    org_name TEXT,
+    relation_type TEXT NOT NULL,
+    evidence_level TEXT NOT NULL,
+    signals TEXT NOT NULL,
+    review_status TEXT NOT NULL DEFAULT 'UNREVIEWED',
+    review_note TEXT,
+    detection_rule TEXT NOT NULL,
+    detected_at TEXT NOT NULL
+);
+CREATE TABLE family_members (
+    family_id TEXT NOT NULL,
+    record_id TEXT NOT NULL,
+    list_key TEXT NOT NULL,
+    PRIMARY KEY (family_id, record_id)
+);
+CREATE INDEX idx_family_members_record ON family_members(record_id);
 """
 
 DATASET_COLUMNS = [
