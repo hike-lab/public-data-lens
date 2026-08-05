@@ -77,7 +77,7 @@ def validate_against_live(spec: dict) -> list[str]:
             svc.get_catalog_changes(status="POSSIBLE_IDENTITY_CHANGE", page_size=5),
         ],
         "get_catalog_stats": [svc.get_catalog_stats(a) for a in
-                              ("theme", "org", "format", "completeness", "listType")],
+                              ("theme", "org", "format", "completeness", "listType", "family")],
         "get_dataset_structure": _structure_samples(svc),
         "search_by_columns": [
             svc.search_by_columns(["위도", "경도"], 5),
@@ -116,7 +116,7 @@ def main() -> int:
     )
     spec = {
         "specVersion": SPEC_VERSION,
-        "status": "APPROVED — v1.0.0 동결(2026-07-17) 후 v1.1.0 minor(2026-07-28): completeness 확장 / v1.2.0 minor(2026-07-30): 구조 관측 Tool / v1.3.0 minor(2026-07-30): search_by_columns Tool·compare structureComparison 추가(S2) / v1.4.0 minor(2026-08-03): build_data_plan Tool(결정론적 활용 계획 초안 — LLM 미사용·DRAFT 전용) / v1.7.0 minor(2026-08-04): 검색 도구(search_datasets·search_by_columns) 기본 pageSize 20→10 — 호스트 LLM 응답 토큰 절감, 스키마·필드 불변. breaking은 재승인 필요",
+        "status": "APPROVED — v1.0.0 동결(2026-07-17) 후 v1.1.0 minor(2026-07-28): completeness 확장 / v1.2.0 minor(2026-07-30): 구조 관측 Tool / v1.3.0 minor(2026-07-30): search_by_columns Tool·compare structureComparison 추가(S2) / v1.4.0 minor(2026-08-03): build_data_plan Tool(결정론적 활용 계획 초안 — LLM 미사용·DRAFT 전용) / v1.7.0 minor(2026-08-04): 검색 도구(search_datasets·search_by_columns) 기본 pageSize 20→10 — 호스트 LLM 응답 토큰 절감, 스키마·필드 불변 / v1.8.0 minor(2026-08-05): 계열 후보 노출(ADR-011) — get_dataset familyCandidate(nullable)·get_catalog_stats family 축 additive 추가. 후보는 판정이 아니며 배포는 사람 검증 게이트 통과 후. breaking은 재승인 필요",
         "generatedAt": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "baseUri": BASE_URI,
         "compatibilityPolicy": (

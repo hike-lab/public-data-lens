@@ -58,6 +58,10 @@ INFERRED_* (region)                        추론이다. 틀렸다는 뜻이 아
 WITHHELD_BY_LICENSE / _SAFETY              정책적 보류다
 검색 결과 없음                              데이터 부재가 아니다
 search_by_columns 결과 없음                 컬럼 부재가 아니다 (미수집일 수 있음)
+familyCandidate (UNREVIEWED)               자동 후보다. 확정된 계열이 아니다
+LEGITIMATE_SPLIT                           정당한 분리다. 파편화가 아니다
+계열 후보 존재                              문제 신호가 아니다
+family 축 available=false                  미산출이다. 0건이 아니다
 ```
 
 **색 규칙**: 위 항목에 실패색·경고색을 쓰지 않는다. 빨강·앰버는 `error.code` 9종,

@@ -140,6 +140,73 @@ def test_review_merge(tmp_path):
     assert summary["reviewStatus"] == {"LEGITIMATE_SPLIT": 1}
 
 
+# ---------------------------------------------------------------- v1.8 노출(P1)
+
+def _service_with_family(catalog_db):
+    """conftest 픽스처 DB에 rec-001·rec-002 계열 후보를 등재한 Service."""
+    fam_id = _family_id(["rec-001", "rec-002"])
+    conn = sqlite3.connect(catalog_db)
+    conn.execute(
+        "INSERT INTO families VALUES (?, 2, '테스트기관', 'TIME_LIKE', 'CATALOG_ONLY',"
+        " '[\"TITLE\"]', 'UNREVIEWED', NULL, 'family-candidate-v1.0', 't')",
+        (fam_id,),
+    )
+    conn.executemany(
+        "INSERT INTO family_members VALUES (?, ?, ?)",
+        [(fam_id, "rec-001", "list-001"), (fam_id, "rec-002", "list-002")],
+    )
+    conn.commit()
+    conn.close()
+    from datanav.api.service import Service
+    return Service(catalog_db), fam_id
+
+
+def test_get_dataset_exposes_family_candidate(catalog_db):
+    from jsonschema import Draft202012Validator
+    from datanav.spec import OUTPUT_SCHEMAS
+
+    svc, fam_id = _service_with_family(catalog_db)
+    body = svc.get_dataset("rec-001", "card")
+    fc = body["data"]["familyCandidate"]
+    assert fc["familyId"] == fam_id
+    assert fc["reviewStatus"] == "UNREVIEWED"          # 후보는 판정이 아니다
+    assert {m["recordId"] for m in fc["members"]} == {"rec-001", "rec-002"}
+    assert "family-candidate-v1.0" in body["meta"]["ruleVersions"]
+    Draft202012Validator(OUTPUT_SCHEMAS["get_dataset"]).validate(body)
+
+    # 계열에 속하지 않은 레코드는 null — 부재가 아니라 '후보 없음'
+    body3 = svc.get_dataset("rec-003", "card")
+    assert body3["data"]["familyCandidate"] is None
+    Draft202012Validator(OUTPUT_SCHEMAS["get_dataset"]).validate(body3)
+
+
+def test_stats_family_axis(catalog_db):
+    from jsonschema import Draft202012Validator
+    from datanav.spec import OUTPUT_SCHEMAS
+
+    svc, _ = _service_with_family(catalog_db)
+    body = svc.get_catalog_stats("family")
+    data = body["data"]
+    assert data["available"] is True
+    assert data["familyCandidates"]["families"] == 1
+    assert data["familyCandidates"]["memberRecords"] == 2
+    assert data["familyCandidates"]["byReviewStatus"] == {"UNREVIEWED": 1}
+    Draft202012Validator(OUTPUT_SCHEMAS["get_catalog_stats"]).validate(body)
+
+
+def test_stats_family_axis_pre_adoption_release(catalog_db):
+    # 도입 전 릴리스(families 테이블 부재): 0건이 아니라 미산출로 보고
+    conn = sqlite3.connect(catalog_db)
+    conn.executescript("DROP TABLE families; DROP TABLE family_members;")
+    conn.commit()
+    conn.close()
+    from datanav.api.service import Service
+    svc = Service(catalog_db)
+    body = svc.get_catalog_stats("family")
+    assert body["data"]["available"] is False
+    assert svc.get_dataset("rec-001", "card")["data"]["familyCandidate"] is None
+
+
 def test_union_of_signals_merges_transitively():
     # 1↔2는 제목, 2↔3은 패턴으로만 이어져도 하나의 계열로 합집합
     conn = _release_db([

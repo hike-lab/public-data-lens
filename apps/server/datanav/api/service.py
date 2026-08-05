@@ -22,6 +22,7 @@ from ..rules import (
     RULE_CARD,
     RULE_COMPLETENESS,
     RULE_DIFF,
+    RULE_FAMILY,
     RULE_FRESHNESS,
     RULE_IDENTITY,
     RULE_RANKING,
@@ -43,7 +44,7 @@ _FRESHNESS_DAYS = {
 }
 
 _VALID_LIST_TYPES = ("FILE", "API", "STD")
-_STATS_AXES = ("theme", "org", "format", "completeness", "listType")
+_STATS_AXES = ("theme", "org", "format", "completeness", "listType", "family")
 _CHANGE_STATUSES = (
     "ADDED", "MODIFIED", "MISSING_FROM_SNAPSHOT", "REAPPEARED",
     "POSSIBLE_IDENTITY_CHANGE", "OFFICIALLY_WITHDRAWN",
@@ -319,7 +320,52 @@ class Service:
         warnings = [
             f"메타데이터 이슈 관찰 {len(issues)}건 존재(자동 탐지, 검수 전) — 원본 확인 필요"
         ] if issues else []
-        return envelope({"view": view, "dataset": data}, self.snapshot, rules, warnings)
+        # v1.8 additive: 계열 후보(ADR-011) — 후보는 판정이 아니다. 이 목록이
+        # 전부인지(계열의 일부인지)를 호스트가 판단할 수 있게 근거와 함께 제공.
+        family = self._family_candidate(record_id)
+        if family:
+            rules.append(RULE_FAMILY)
+        return envelope(
+            {"view": view, "dataset": data, "familyCandidate": family},
+            self.snapshot, rules, warnings,
+        )
+
+    @property
+    def families_available(self) -> bool:
+        """이 릴리스에 계열 후보 테이블이 있는가 — 도입 전 빌드면 False(부재≠0건)."""
+        if not hasattr(self, "_families_available"):
+            self._families_available = bool(self.conn.execute(
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='families'"
+            ).fetchone())
+        return self._families_available
+
+    def _family_candidate(self, record_id: str) -> dict | None:
+        if not self.families_available:
+            return None
+        fam = self.conn.execute(
+            "SELECT f.* FROM families f JOIN family_members m ON m.family_id = f.family_id "
+            "WHERE m.record_id = ?", (record_id,),
+        ).fetchone()
+        if fam is None:
+            return None
+        members = self.conn.execute(
+            "SELECT m.record_id, d.title FROM family_members m "
+            "JOIN datasets d ON d.record_id = m.record_id "
+            "WHERE m.family_id = ? ORDER BY m.record_id LIMIT 10", (fam["family_id"],),
+        ).fetchall()
+        return {
+            "familyId": fam["family_id"],
+            "memberCount": fam["member_count"],
+            "relationTypeAuto": fam["relation_type"],
+            "evidenceLevel": fam["evidence_level"],
+            "reviewStatus": fam["review_status"],
+            "signals": json.loads(fam["signals"]),
+            "members": [{"recordId": m["record_id"], "title": m["title"]} for m in members],
+            "membersTruncated": fam["member_count"] > len(members),
+            "rule": RULE_FAMILY,
+            "note": "자동 탐지 후보입니다 — 확정된 계열이 아니며 오탐·누락이 있을 수 있습니다. "
+                    "reviewStatus가 UNREVIEWED이면 사람 검증 전입니다.",
+        }
 
     def get_catalog_record(self, record_id: str) -> dict:
         """CatalogRecord 정본 표현 — Dataset 정체성과 월별 목록 기술을 분리한다."""
@@ -827,6 +873,35 @@ class Service:
                 "SELECT list_type AS k, COUNT(*) AS n FROM datasets GROUP BY list_type ORDER BY n DESC"
             ).fetchall()
             data = {"axis": axis, "buckets": [{"key": r["k"], "count": r["n"]} for r in rows]}
+        elif axis == "family":
+            # v1.8 additive(ADR-011): 목록 수와 계열 후보 수의 구분 — 자동 후보
+            # 비율이며 사람 검증 전 수치다. 도입 전 릴리스는 부재를 상태로 보고.
+            rules = [RULE_FAMILY]
+            if not self.families_available:
+                data = {"axis": axis, "available": False,
+                        "note": "이 릴리스에는 계열 후보 테이블이 없습니다(도입 전 빌드) — 0건이 아니라 미산출입니다."}
+            else:
+                total, member_records = self.conn.execute(
+                    "SELECT COUNT(*), COALESCE(SUM(member_count), 0) FROM families"
+                ).fetchone()
+                by_evidence = {r["k"]: r["n"] for r in self.conn.execute(
+                    "SELECT evidence_level AS k, COUNT(*) AS n FROM families GROUP BY 1")}
+                by_review = {r["k"]: r["n"] for r in self.conn.execute(
+                    "SELECT review_status AS k, COUNT(*) AS n FROM families GROUP BY 1")}
+                file_total = self.conn.execute(
+                    "SELECT COUNT(*) FROM datasets WHERE list_type='FILE'").fetchone()[0]
+                data = {
+                    "axis": axis, "available": True,
+                    "familyCandidates": {
+                        "families": total,
+                        "memberRecords": member_records,
+                        "fileRecordsTotal": file_total,
+                        "byEvidenceLevel": by_evidence,
+                        "byReviewStatus": by_review,
+                    },
+                    "note": "자동 탐지 후보 통계입니다 — 확정된 계열 수가 아니며, "
+                            "목록 수와 계열 수는 서로 다른 단위입니다.",
+                }
         else:  # completeness — 유형별 프로파일 기준(§4.1)
             rules = list(RULE_COMPLETENESS.values())
             buckets = []
