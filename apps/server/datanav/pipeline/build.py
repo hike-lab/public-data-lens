@@ -13,7 +13,7 @@ from pathlib import Path
 from .. import config
 from ..rules import RULE_ISSUE, load_registry
 from ..store import db as store
-from . import aird, diff as diffmod, shacl
+from . import aird, diff as diffmod, families as fammod, shacl
 from .completeness import compute_completeness
 from .jsonld import (
     catalog_jsonld,
@@ -203,6 +203,15 @@ def build_release(source_csv: Path, snapshot: str, min_rows: int = 1000) -> Path
                 counts[c["status"]] = counts.get(c["status"], 0) + 1
             diff_summary = {"baseSnapshot": prev_release["snapshot"], "counts": counts}
 
+    # 5b) 계열 후보 사전계산(family-candidate-v1.0, ADR-011) — 관측 스토어가
+    #     없으면 구조 신호 없이 CATALOG_ONLY로 강등된다
+    from ..observe.store import OBSERVATIONS_DB
+    family_reviews = fammod.load_reviews(config.CATALOG_DIR / "family_reviews.json")
+    family_summary = fammod.detect_families(
+        conn, obs_path=OBSERVATIONS_DB, reviews=family_reviews, detected_at=detected_at
+    )
+    conn.commit()
+
     # 6) 수용 검사(§11 데이터 기준)
     checks = _acceptance_checks(conn, source_rows, parsed)
     report = {
@@ -226,6 +235,7 @@ def build_release(source_csv: Path, snapshot: str, min_rows: int = 1000) -> Path
         "shacl": {k: shacl_report[k] for k in ("conforms", "violationCount", "warningCount", "sampleSize", "mode")},
         "bulk": bulk_info,
         "diff": diff_summary,
+        "families": family_summary,
         "schemaVersion": config.SCHEMA_VERSION,
         "ruleRegistryVersion": load_registry()["registryVersion"],
     }

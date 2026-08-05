@@ -188,6 +188,27 @@
       "title": "검색어 결정론 해석(지역·포맷·주기·유형 토큰 → 필터)",
       "effectiveDate": "2026-08-04",
       "definition": "검색어 공백 토큰을 제한 별칭 사전(시·도명→ISO 3166-2:KR, 포맷, 갱신 주기, 목록 유형)과 정확 일치로 대조해 필터로 이관한다. 축당 최초 1토큰, 명시 필터가 있는 축은 해석하지 않는다(명시 우선). 결과는 interpretedFilters[]{field,value,sourceToken,ruleId}로 노출되어 항상 해제 가능하다. LLM·유사도 추론 없음 — 사전 확장은 규칙 버전 증가를 동반한다."
+    },
+    {
+      "ruleId": "family-candidate-v1.0",
+      "title": "계열 후보 탐지(제목 정규화·기관 내 동일 구조지문·가변 토큰 패턴)",
+      "effectiveDate": "2026-08-05",
+      "definition": "FILE 목록에서 하나의 실질적 데이터가 여러 목록으로 분리 등록된 계열 후보를 세 신호의 합집합(union-find)으로 탐지한다. ①TITLE: 동일 기관 + 숫자·괄호·구분기호 제거 후 동일 제목(2건 이상) ②STRUCTURE: 동일 기관 + 동일 구조지문(컬럼 4개 이상, 2건 이상) ③PATTERN: 동일 기관 + 공통 접두·접미 토큰 사이 가운데 토큰만 가변(3건 이상). 후보는 판정이 아니다 — evidence_level(CATALOG_ONLY|PLUS_STRUCTURE)과 review_status(UNREVIEWED|CONFIRMED_FAMILY|LEGITIMATE_SPLIT|NOT_A_FAMILY)를 반드시 동반한다. relation_type(TIME_LIKE|REGION_LIKE|NUMBERED|NAME_PARTITION)은 자동 추정이며 검증 전 값이다. family_id는 구성원 집합의 해시로 결정론 귀속되어, 구성이 바뀌면 검증 상태가 승계되지 않는다. 관측 스토어 부재 시 구조 신호 없이 CATALOG_ONLY로 강등된다. LLM·유사도 점수 없음. 사람 검증은 family_reviews.json(수동 관리)으로 병합된다. 근거: ADR-011.",
+      "signals": [
+        "TITLE",
+        "STRUCTURE",
+        "PATTERN"
+      ],
+      "evidenceLevels": [
+        "CATALOG_ONLY",
+        "PLUS_STRUCTURE"
+      ],
+      "reviewStatuses": [
+        "UNREVIEWED",
+        "CONFIRMED_FAMILY",
+        "LEGITIMATE_SPLIT",
+        "NOT_A_FAMILY"
+      ]
     }
   ]
 }
