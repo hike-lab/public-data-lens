@@ -8,7 +8,7 @@ schemaVersion은 응답 봉투 meta.schemaVersion으로 전달된다.
 """
 from __future__ import annotations
 
-SPEC_VERSION = "1.7.0"
+SPEC_VERSION = "1.8.0"
 
 # ---------------------------------------------------------------- $defs
 DEFS = {
@@ -224,6 +224,28 @@ OUTPUT_SCHEMAS: dict[str, dict] = {
         "properties": {
             "view": {"enum": ["card", "normalized", "source", "jsonld"]},
             "dataset": {"type": "object"},
+            "familyCandidate": {
+                "type": ["object", "null"],
+                "description": "v1.8.0 additive(ADR-011): 이 목록이 속한 계열 후보 — "
+                               "자동 탐지이며 판정이 아니다. reviewStatus=UNREVIEWED는 사람 검증 전.",
+                "required": ["familyId", "memberCount", "relationTypeAuto", "evidenceLevel",
+                             "reviewStatus", "signals", "members", "membersTruncated", "rule", "note"],
+                "properties": {
+                    "familyId": {"type": "string"},
+                    "memberCount": {"type": "integer", "minimum": 2},
+                    "relationTypeAuto": {"enum": ["TIME_LIKE", "REGION_LIKE", "NUMBERED", "NAME_PARTITION"]},
+                    "evidenceLevel": {"enum": ["CATALOG_ONLY", "PLUS_STRUCTURE"]},
+                    "reviewStatus": {"enum": ["UNREVIEWED", "CONFIRMED_FAMILY",
+                                              "LEGITIMATE_SPLIT", "NOT_A_FAMILY"]},
+                    "signals": {"type": "array", "items": {"enum": ["TITLE", "STRUCTURE", "PATTERN"]}},
+                    "members": {"type": "array", "maxItems": 10, "items": {
+                        "type": "object", "required": ["recordId", "title"],
+                    }},
+                    "membersTruncated": {"type": "boolean"},
+                    "rule": {"const": "family-candidate-v1.0"},
+                    "note": {"type": "string"},
+                },
+            },
         },
         "allOf": [
             {
@@ -333,8 +355,28 @@ OUTPUT_SCHEMAS: dict[str, dict] = {
     "get_catalog_stats": _envelope({
         "type": "object",
         "required": ["axis"],
-        "properties": {"axis": {"enum": ["theme", "org", "format", "completeness", "listType"]}},
+        "properties": {"axis": {"enum": ["theme", "org", "format", "completeness", "listType", "family"]}},
         "oneOf": [
+            {
+                "required": ["available"],
+                "properties": {
+                    "available": {"type": "boolean",
+                                  "description": "v1.8.0 additive(family 축): false = 도입 전 릴리스 — 0건이 아니라 미산출"},
+                    "familyCandidates": {
+                        "type": "object",
+                        "required": ["families", "memberRecords", "fileRecordsTotal",
+                                     "byEvidenceLevel", "byReviewStatus"],
+                        "properties": {
+                            "families": {"type": "integer", "minimum": 0},
+                            "memberRecords": {"type": "integer", "minimum": 0},
+                            "fileRecordsTotal": {"type": "integer", "minimum": 0},
+                            "byEvidenceLevel": {"type": "object", "additionalProperties": {"type": "integer"}},
+                            "byReviewStatus": {"type": "object", "additionalProperties": {"type": "integer"}},
+                        },
+                    },
+                    "note": {"type": "string"},
+                },
+            },
             {
                 "required": ["buckets"],
                 "properties": {"buckets": {"type": "array", "items": {
