@@ -8,6 +8,8 @@ schemaVersion은 응답 봉투 meta.schemaVersion으로 전달된다.
 """
 from __future__ import annotations
 
+# 배포 트레인 동결(ADR-014): 미배포 버전은 열린 상태 — additive 변경은 같은 번호에
+# 누적되고, 공개 배포 시점에 동결된다. 라이브가 서빙 중인 버전(동결분)보다 위여야 한다.
 SPEC_VERSION = "1.8.0"
 
 # ---------------------------------------------------------------- $defs
@@ -131,7 +133,12 @@ DEFS = {
             "rowCountListed": {"type": "integer",
                                "description": "목록 메타데이터에 기재된 전체 행수"},
             "structureAvailable": {"type": "boolean", "description": "데이터 구조 관측 존재 여부(get_dataset_structure로 조회). v1.2.0 추가"},
-            "score": {"type": "number", "description": "query 있을 때만 — BM25 점수(낮을수록 상위)"},
+            "score": {"type": "number",
+                      "description": "query 있을 때만 — BM25(FTS5) 점수. 낮을수록(음수로 클수록) 상위다 "
+                                     "— 해석 방향은 ranking.scoreDirection이 정본. 순위 판단은 rank를 쓰라"},
+            "rank": {"type": "integer", "minimum": 1,
+                     "description": "v1.8 additive: 서버 정렬에서의 절대 순위(1=최상위, 커서 오프셋 반영). "
+                                    "score 부호·크기 해석과 무관한 정본 순위 — 순위 비교는 이 값으로 한다"},
             "matchedFields": {
                 "type": "array",
                 "items": {"enum": ["title", "keywords", "description", "orgName"]},
@@ -151,9 +158,17 @@ DEFS = {
             "embeddingModel": {"type": ["string", "null"]},
             "tieBreak": {"type": "string"},
             "direction": {"enum": ["asc", "desc"],
-                          "description": "v1.5 additive: 정렬 방향 — 소비자의 문자열 패턴 추론 제거"},
+                          "description": "v1.5 additive: 정렬 방향 — 소비자의 문자열 패턴 추론 제거. "
+                                         "개념적 기준(basis)의 방향이며 items[].score의 수치 방향이 아니다"},
             "basis": {"enum": ["relevance", "modified_date"],
                       "description": "v1.5 additive: 정렬 기준(관련도 vs 최신 수정)"},
+            "scoreDirection": {
+                "enum": ["LOWER_IS_MORE_RELEVANT", "NOT_APPLICABLE"],
+                "description": "v1.8 additive: items[].score의 해석 방향. SQLite FTS5 bm25()는 "
+                               "낮을수록(예: -17.31이 -16.29보다) 상위다 — 일반 BM25의 '높을수록 좋음' "
+                               "직관과 반대이므로 명시한다. score 부재(질의 없음) 시 NOT_APPLICABLE. "
+                               "순위 판단의 정본은 items[].rank",
+            },
         },
     },
     "changeItem": {

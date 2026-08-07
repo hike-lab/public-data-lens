@@ -25,6 +25,22 @@ def test_search_envelope_and_ranking_meta(catalog_service):
     rk = r["data"]["ranking"]
     assert rk["version"] == "ranking-bm25-v1.0"
     assert rk["indexVersion"] and rk["tieBreak"]
+    # v1.8: score 해석 방향은 사실로 노출 — 질의 있음 = BM25(낮을수록 상위)
+    assert rk["scoreDirection"] == "LOWER_IS_MORE_RELEVANT"
+    items = r["data"]["items"]
+    assert [i["rank"] for i in items] == list(range(1, len(items) + 1))
+    # rank가 정본 순위: score가 있으면 rank 오름차순에서 score도 오름차순(낮을수록 상위)
+    scores = [i["score"] for i in items if "score" in i]
+    assert scores == sorted(scores)
+
+
+def test_search_without_query_rank_and_score_direction(catalog_service):
+    r = catalog_service.search_datasets(page_size=2)
+    assert r["data"]["ranking"]["scoreDirection"] == "NOT_APPLICABLE"  # score 부재
+    assert [i["rank"] for i in r["data"]["items"]] == [1, 2]
+    nxt = catalog_service.search_datasets(page_size=2, cursor=r["data"]["nextCursor"])
+    # rank는 커서 오프셋을 반영한 절대 순위다
+    assert [i["rank"] for i in nxt["data"]["items"]] == [3, 4]
 
 
 def test_cursor_pagination_no_dup_no_gap(catalog_service):
