@@ -3,10 +3,151 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Public Data Lens</title>
+    <meta name="color-scheme" content="light" />
+    <title>공공데이터 렌즈 (Public Data Lens) — 근거 기반 공공데이터 탐색·판단</title>
+
+    <!-- 기계 판독 레이어(ADR-012) — AI-Ready 실증 프로젝트의 대표 페이지가
+         기계 판독 가능해야 한다. 수치가 필요한 실시간 값은 /api/status와 llms.txt가 정본. -->
+    <meta
+      name="description"
+      content="공공데이터포털 월간 목록(약 9.6만 건)을 정규화해, 어떤 공공데이터가 존재하고 어떤 후보가 검토할 가치가 있는지를 근거 수준과 함께 제시하는 탐색·판단 계층. 중앙대학교 HIKE 연구실의 AIRD(AI-Ready Data) 표준안 실증 프로젝트."
+    />
+    <link rel="canonical" href="https://service.datahub.kr/projects/public-data-lens/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="공공데이터 렌즈 (Public Data Lens)" />
+    <meta property="og:title" content="공공데이터 렌즈 — 근거 기반 공공데이터 탐색·판단" />
+    <meta
+      property="og:description"
+      content="공공데이터포털 월간 목록을 정규화해 존재·관측·한계를 근거 수준과 함께 제시하는 데이터 관측소. MCP로 AI 안에서도 같은 능력을 쓸 수 있습니다."
+    />
+    <meta property="og:url" content="https://service.datahub.kr/projects/public-data-lens/" />
+    <meta property="og:locale" content="ko_KR" />
+
+    <!-- schema.org — 판정·점수를 신설하지 않는다: 유형·출처·운영 주체 등 구조 사실만 기술 -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": ["SoftwareApplication", "WebApplication"],
+            "@id": "https://service.datahub.kr/projects/public-data-lens/#app",
+            "name": "공공데이터 렌즈",
+            "alternateName": "Public Data Lens",
+            "url": "https://service.datahub.kr/projects/public-data-lens/",
+            "description": "공공데이터포털 월간 목록 메타데이터를 정규화해, 어떤 공공데이터가 존재하고 어떤 후보가 검토할 가치가 있는지를 근거 수준(CATALOG_METADATA_ONLY·FILE_OBSERVATION)과 함께 제시하는 탐색·판단 계층. 같은 능력을 MCP(Model Context Protocol)로 AI 어시스턴트 안에서 쓸 수 있다.",
+            "applicationCategory": "데이터 탐색·판단 계층 (Data Observatory)",
+            "inLanguage": "ko",
+            "isAccessibleForFree": true,
+            "provider": {
+              "@type": "Organization",
+              "name": "중앙대학교 HIKE 연구실",
+              "alternateName": "HIKE Lab, Chung-Ang University",
+              "url": "https://github.com/hike-lab"
+            },
+            "sameAs": ["https://github.com/hike-lab/public-data-lens"],
+            "potentialAction": {
+              "@type": "SearchAction",
+              "target": {
+                "@type": "EntryPoint",
+                "urlTemplate": "https://service.datahub.kr/projects/public-data-lens/?q={search_term_string}"
+              },
+              "query-input": "required name=search_term_string"
+            }
+          },
+          {
+            "@type": "DataCatalog",
+            "@id": "https://service.datahub.kr/projects/public-data-lens/catalog/current",
+            "name": "공공데이터 렌즈 정본 카탈로그",
+            "description": "공공데이터포털 월간 목록 메타데이터를 DCAT 기반 JSON-LD로 정규화한 정본 카탈로그. 판정 규칙 버전과 근거 수준을 포함하며, 실제 데이터의 내용·품질·결합 가능성은 보증하지 않는다.",
+            "url": "https://service.datahub.kr/projects/public-data-lens/catalog/current",
+            "inLanguage": "ko",
+            "isBasedOn": "https://www.data.go.kr",
+            "creator": { "@id": "https://service.datahub.kr/projects/public-data-lens/#app" },
+            "provider": {
+              "@type": "Organization",
+              "name": "중앙대학교 HIKE 연구실",
+              "alternateName": "HIKE Lab, Chung-Ang University",
+              "url": "https://github.com/hike-lab"
+            }
+          }
+        ]
+      }
+    </script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- 기계 판독용 정적 본문(ADR-012) — JS 로드 시 React가 이 블록을 교체한다.
+           JS를 실행하지 않는 크롤러·AI 에이전트가 읽는 대표 텍스트이므로,
+           문안은 화면(About·Connect)과 같은 사실만 말한다. 실시간 수치는 넣지 않는다
+           (낡은 수치는 거짓말이 된다) — 정본은 /api/status와 llms.txt. -->
+      <header>
+        <h1>공공데이터 렌즈 (Public Data Lens)</h1>
+        <p>하고 싶은 일을 말하면, 근거와 함께 공공데이터를 찾아드립니다.</p>
+      </header>
+      <main>
+        <section>
+          <h2>무엇인가</h2>
+          <p>
+            공공데이터 렌즈는 <a href="https://www.data.go.kr">공공데이터포털</a>의 월간
+            목록(약 9.6만 건)을 정규화해, 어떤 데이터가 존재하고 어떤 후보가 검토할 가치가
+            있는지를 근거 수준과 함께 제시하는 탐색·판단 계층입니다. 검색·비교·구조 확인의
+            모든 판정은 버전이 관리되는 규칙으로 재현 가능하게 수행됩니다. 중앙대학교 HIKE
+            연구실이 운영하는 AIRD(AI-Ready Data) 표준안 실증 프로젝트입니다.
+          </p>
+        </section>
+        <section>
+          <h2>무엇을 할 수 있는가</h2>
+          <ul>
+            <li>검색 — 자연어·키워드에 필터(주제·기관·포맷·주기·지역)를 결합한 목록 탐색</li>
+            <li>컬럼 기준 검색 — 위도·경도처럼 실제 파일에서 관측된 컬럼 조건으로 데이터셋 찾기</li>
+            <li>구조 확인 — 실파일에서 관측한 원본 컬럼명·유형·예시값(근거 수준 FILE_OBSERVATION)</li>
+            <li>비교·변경 이력 — 후보 데이터셋의 구조화된 사실 비교, 월간 스냅샷 간 변경 조회</li>
+            <li>활용 계획 초안 — 목적 문장에서 후보·역할·미충족 요구를 결정론적으로 조립(항상 DRAFT)</li>
+          </ul>
+        </section>
+        <section>
+          <h2>한계</h2>
+          <ul>
+            <li>
+              모든 판정은 목록 메타데이터 기반이며 실제 데이터의 내용·품질·결합 가능성을
+              보증하지 않습니다. 원문 접근은 모두 공공데이터포털로 연결됩니다.
+            </li>
+            <li>카탈로그는 월간 스냅샷으로 갱신되며 지연이 있습니다 — 현재 스냅샷·지연 일수는
+              <a href="%BASE_URL%api/status">/api/status</a>가 정본입니다.</li>
+            <li>실파일 구조 관측은 파일형 목록의 일부에 대해서만 존재합니다 — 커버리지 분모도
+              /api/status에서 확인할 수 있습니다.</li>
+            <li>검색 결과 없음은 데이터 부재가 아니고, 구조 미수집은 품질 문제가 아닙니다.</li>
+          </ul>
+        </section>
+        <section>
+          <h2>AI 어시스턴트에서 쓰기 (MCP)</h2>
+          <p>
+            검색·비교·구조 조회는 원격 MCP(Model Context Protocol) 서버로도 제공됩니다 —
+            인증 없이 무료이며 읽기 전용입니다. MCP를 지원하는 AI에 커넥터 URL
+            <code>https://service.datahub.kr/projects/public-data-lens/mcp</code>를 등록하면
+            웹과 동일한 판정 엔진을 대화로 사용할 수 있습니다. AI 에이전트용 안내 문서는
+            <a href="%BASE_URL%llms.txt">llms.txt</a>에 있습니다.
+          </p>
+        </section>
+        <nav aria-label="주요 문서">
+          <ul>
+            <li><a href="%BASE_URL%explore">둘러보기</a></li>
+            <li><a href="%BASE_URL%about">소개</a></li>
+            <li><a href="%BASE_URL%connect">MCP 연결 안내</a></li>
+            <li><a href="https://service.datahub.kr/projects/public-data-lens/catalog/current">정본 카탈로그 (JSON-LD)</a></li>
+            <li><a href="https://service.datahub.kr/projects/public-data-lens/spec/tools/1.0">Tool 스키마 명세 (JSON)</a></li>
+            <li><a href="%BASE_URL%api/resources/privacy">개인정보·로그 고지</a></li>
+            <li><a href="https://github.com/hike-lab/public-data-lens">GitHub 저장소</a></li>
+          </ul>
+        </nav>
+      </main>
+      <noscript>
+        <p>
+          이 페이지의 대화형 탐색(검색·비교·구조 확인)은 JavaScript가 필요합니다.
+          위 정적 안내와 정본 URI는 JavaScript 없이도 유효합니다.
+        </p>
+      </noscript>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

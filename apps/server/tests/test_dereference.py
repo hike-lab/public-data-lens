@@ -126,6 +126,26 @@ def test_bulk_files_served_and_traversal_blocked(service):
     assert db.status_code == 404  # 허용 확장자 아님
 
 
+def test_llms_txt_resolves(monkeypatch, catalog_service):
+    """/llms.txt(ADR-012) — 루트·정본 경로 모두에서 배포 상태 기반 문서가 나와야 한다."""
+    from datanav.api import rest, service as service_mod
+
+    monkeypatch.setattr(rest, "_svc", lambda: catalog_service)
+    # 픽스처 DB에는 current 포인터가 없다 — get_status의 배포 메타만 대체
+    monkeypatch.setattr(service_mod, "read_current_pointer",
+                        lambda: {"release": catalog_service.release,
+                                 "deployedAt": "2099-01-31T00:00:00Z"})
+    for path in ("/llms.txt", f"{CANON}/llms.txt"):
+        r = client.get(path)
+        assert r.status_code == 200
+        assert r.headers["content-type"].startswith("text/markdown")
+        assert r.text.startswith("# 공공데이터 렌즈")
+        assert f"{BASE_URI}/mcp" in r.text          # MCP 커넥터 URL
+        assert f"{BASE_URI}/catalog/current" in r.text  # 정본 URI
+        assert catalog_service.snapshot in r.text   # 수치는 조회 시점 배포 상태에서 온다
+        assert "품질 문제가 아니다" in r.text        # 미수집 오독 방지 문안(계약 의미)
+
+
 @requires_catalog
 def test_aird_assessment_resolves(service):
     r = client.get(f"{CANON}/catalog/current/aird-assessment")
