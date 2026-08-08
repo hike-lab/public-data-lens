@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://service.datahub.kr/projects/public-data-lens/schema/eval-case/1.0",
+  "title": "판정 케이스 — '이 입력이면 이 판정이 맞다' (ADR-010 자산 흐름, ADR-013 첫 등재)",
+  "description": "호스트 LLM·소비자가 계약 응답을 해석할 때 저지르기 쉬운 오독을 케이스 쌍으로 고정한다. 케이스는 렌즈의 자산이다 — 응답 원문 누적분(evals/results/**)은 커밋하지 않는다.",
+  "type": "object",
+  "required": ["id", "concept", "given", "correct", "misreadings", "provenance"],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "description": "파일명과 동일한 케이스 식별자"
+    },
+    "concept": {
+      "type": "string",
+      "description": "검증 대상 계약 개념 — 필드 경로·enum·규칙 id (예: ranking.scoreDirection)"
+    },
+    "contractVersion": {
+      "type": "string",
+      "description": "케이스가 전제하는 최소 계약 버전(schemaVersion)"
+    },
+    "given": {
+      "type": "object",
+      "description": "입력 — 판정에 필요한 최소 사실(도구 이름·응답 발췌 등). 실응답 전문이 아니라 판정 재료만 담는다",
+      "required": ["tool"],
+      "properties": {
+        "tool": {"type": "string"},
+        "request": {"type": "object"},
+        "response": {"type": "object"}
+      }
+    },
+    "correct": {
+      "type": "object",
+      "required": ["judgment", "rationale"],
+      "properties": {
+        "judgment": {"type": "string", "description": "맞는 판정 — 한 문장"},
+        "rationale": {"type": "string", "description": "왜 그 판정이 맞는가 — 계약 근거"}
+      }
+    },
+    "misreadings": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string"},
+      "description": "이 케이스가 막으려는 오독 — 각각 한 문장"
+    },
+    "provenance": {
+      "type": "object",
+      "required": ["source", "date"],
+      "properties": {
+        "source": {
+          "enum": ["design_review", "incident", "concierge_derived"],
+          "description": "케이스 출처(ADR-010 §4 — concierge_derived는 익명·집계 환류만)"
+        },
+        "date": {"type": "string", "format": "date"},
+        "reference": {"type": "string", "description": "근거 문서(ADR·이슈·커밋)"}
+      }
+    }
+  }
+}

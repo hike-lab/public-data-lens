@@ -116,7 +116,7 @@ def main() -> int:
     )
     spec = {
         "specVersion": SPEC_VERSION,
-        "status": "APPROVED — v1.0.0 동결(2026-07-17) 후 v1.1.0 minor(2026-07-28): completeness 확장 / v1.2.0 minor(2026-07-30): 구조 관측 Tool / v1.3.0 minor(2026-07-30): search_by_columns Tool·compare structureComparison 추가(S2) / v1.4.0 minor(2026-08-03): build_data_plan Tool(결정론적 활용 계획 초안 — LLM 미사용·DRAFT 전용) / v1.7.0 minor(2026-08-04): 검색 도구(search_datasets·search_by_columns) 기본 pageSize 20→10 — 호스트 LLM 응답 토큰 절감, 스키마·필드 불변 / v1.8.0 minor(2026-08-05): 계열 후보 노출(ADR-011) — get_dataset familyCandidate(nullable)·get_catalog_stats family 축 additive 추가. 후보는 판정이 아니며 배포는 사람 검증 게이트 통과 후. breaking은 재승인 필요",
+        "status": "APPROVED — v1.0.0 동결(2026-07-17) 후 v1.1.0 minor(2026-07-28): completeness 확장 / v1.2.0 minor(2026-07-30): 구조 관측 Tool / v1.3.0 minor(2026-07-30): search_by_columns Tool·compare structureComparison 추가(S2) / v1.4.0 minor(2026-08-03): build_data_plan Tool(결정론적 활용 계획 초안 — LLM 미사용·DRAFT 전용) / v1.7.0 minor(2026-08-04): 검색 도구(search_datasets·search_by_columns) 기본 pageSize 20→10 — 호스트 LLM 응답 토큰 절감, 스키마·필드 불변 / v1.8.0 minor(미배포 누적 — ADR-014 배포 트레인 동결, 공개 배포 시 동결): ① 계열 후보 노출(2026-08-05, ADR-011) — get_dataset familyCandidate(nullable)·get_catalog_stats family 축 additive 추가, 후보는 판정이 아니며 배포는 사람 검증 게이트 통과 후 ② 검색 순위 오독 방지(2026-08-08, ADR-013) — search_datasets items[].rank(응답 순위 정수)·ranking.scoreDirection additive 추가, BM25(FTS5) score는 낮을수록 상위. breaking은 재승인 필요",
         "generatedAt": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "baseUri": BASE_URI,
         "compatibilityPolicy": (

@@ -1,0 +1,35 @@
+{
+  "id": "ranking-bm25-direction-001",
+  "concept": "ranking.scoreDirection",
+  "contractVersion": "1.8.0",
+  "given": {
+    "tool": "search_datasets",
+    "request": {"query": "전기차 충전소", "pageSize": 2},
+    "response": {
+      "ranking": {
+        "method": "bm25(fts5)/AND",
+        "direction": "desc",
+        "basis": "relevance",
+        "scoreDirection": "LOWER_IS_MORE_RELEVANT"
+      },
+      "items": [
+        {"title": "A 전기차 충전소 현황", "rank": 1, "score": -17.31},
+        {"title": "B 충전 인프라 통계", "rank": 2, "score": -16.29}
+      ]
+    }
+  },
+  "correct": {
+    "judgment": "score -17.31인 A가 -16.29인 B보다 상위다.",
+    "rationale": "score는 SQLite FTS5 bm25() 값으로 낮을수록(음수로 클수록) 상위다 — scoreDirection=LOWER_IS_MORE_RELEVANT가 이를 명시한다. 순위 판단의 정본은 items[].rank이며, ranking.direction(desc)은 개념적 관련도 기준의 방향이지 score 수치의 방향이 아니다."
+  },
+  "misreadings": [
+    "일반 BM25의 '높을수록 좋음' 직관으로 -16.29(B)를 상위로 판정한다.",
+    "direction=desc를 score 수치에 적용해 '큰 값이 먼저'로 읽는다.",
+    "score의 절대 크기·부호를 데이터 품질 신호로 해석한다 — score는 이 응답 안의 상대 순위 재료일 뿐이다."
+  ],
+  "provenance": {
+    "source": "design_review",
+    "date": "2026-08-08",
+    "reference": "decisions/013(rank·scoreDirection — v1.8.0 합류), decisions/014(배포 트레인 동결), ADR-004(v1.5 direction 노출 — 문자열 추론 제거의 후속)"
+  }
+}
