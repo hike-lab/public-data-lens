@@ -7,7 +7,15 @@ import { fileURLToPath } from 'node:url'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 const specDir = path.resolve(here, '../../server/datanav/spec')
-const specFile = readdirSync(specDir).filter((f) => /^tool-schemas-v[\d.]+\.json$/.test(f)).sort().at(-1)
+// 최신 버전 선택은 semver 수치 비교로 한다 — 문자열 정렬은 v1.10.0을 v1.9.0보다 앞에 놓는다
+const semver = (f) => f.match(/v(\d+)\.(\d+)\.(\d+)/).slice(1, 4).map(Number)
+const specFile = readdirSync(specDir)
+  .filter((f) => /^tool-schemas-v\d+\.\d+\.\d+\.json$/.test(f))
+  .sort((a, b) => {
+    const [A, B] = [semver(a), semver(b)]
+    return A[0] - B[0] || A[1] - B[1] || A[2] - B[2]
+  })
+  .at(-1)
 const spec = JSON.parse(readFileSync(path.join(specDir, specFile), 'utf-8'))
 
 // 스펙 전체에서 enum 배열 수집
