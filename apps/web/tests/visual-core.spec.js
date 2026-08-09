@@ -21,8 +21,8 @@ test('홈 — 검색 단독(pristine)', async ({ page }) => {
   await expect(page.locator('.examples .chip').first()).toBeVisible()
   // 홈은 검색으로 끝난다 — 쇼케이스·투명성 블록은 둘러보기·소개로 이동
   await expect(page.locator('.home-block')).toHaveCount(0)
-  // 상단 메뉴는 둘러보기·소개·MCP 연결 — 변경 이력은 푸터로
-  await expect(page.locator('.nav-links .nav-link')).toHaveCount(3)
+  // 상단 메뉴는 둘러보기·관측 현황·소개·MCP 연결 — 변경 이력은 푸터로
+  await expect(page.locator('.nav-links .nav-link')).toHaveCount(4)
   await expect(page.locator('.footer .footer-link')).toContainText('변경 이력')
   await shoot(page, 'home.png')
 })
@@ -37,6 +37,19 @@ test('둘러보기 — 서사·해부·구조 실물', async ({ page }) => {
   // §3 #4 — 구조 관측이 있는 최신 수정분 3건
   await expect(page.locator('.live-block .result-row')).toHaveCount(3)
   await shoot(page, 'explore.png')
+})
+
+test('관측 현황 — 사실 표현·미산출 상태·축적 단계', async ({ page }) => {
+  await page.locator('.nav-link', { hasText: '관측 현황' }).click()
+  await expect(page.locator('.explore-title')).toContainText('관측 현황')
+  // 유형·주제·기관 분포는 서버 버킷 그대로(기관 행에는 교차 집계 부기)
+  await expect(page.locator('.obs-bars').first()).toBeVisible()
+  await expect(page.locator('.obs-extra').first()).toContainText('파일')
+  // 계열 미산출은 0건이 아니라 상태로 표기(실패색 없음)
+  await expect(page.locator('.observatory')).toContainText('0건이라는 뜻이 아닙니다')
+  // 첫 스냅샷 축적 단계 — 변경 통계 부재는 사실로 안내
+  await expect(page.locator('.observatory')).toContainText('첫 스냅샷 축적 단계')
+  await shoot(page, 'observatory.png')
 })
 
 test('검색 결과 — 어린이 보호구역', async ({ page }) => {

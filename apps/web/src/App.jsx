@@ -8,6 +8,7 @@ import DatasetProfile from './components/DatasetProfile.jsx'
 import AboutView from './components/AboutView.jsx'
 import ExploreView from './components/ExploreView.jsx'
 import ConnectView from './components/ConnectView.jsx'
+import ObservatoryView from './components/ObservatoryView.jsx'
 
 // 배포 표면(빌드 시 결정): 'core' = MCP 배포 동반 웹(비생성형만),
 // 'concierge' = 별도 컨시어지 서비스(컨시어지 중심 + 보조 검색), 'all' = 로컬 개발 기본
@@ -31,6 +32,7 @@ document.documentElement.dataset.surface = SURFACE
 const NAV_LINKS = [
   ...(HAS_CONCIERGE ? [{ id: 'concierge', label: 'AI 컨시어지' }] : []),
   { id: 'explore', label: '둘러보기' },
+  { id: 'observatory', label: '관측 현황' },
   { id: 'about', label: '소개' },
   { id: 'connect', label: 'MCP 연결' },
 ]
@@ -154,6 +156,7 @@ export default function App() {
           />
         )}
         {view === 'changes' && <ChangesView onOpen={openProfile} />}
+        {view === 'observatory' && <ObservatoryView status={status} />}
         {view === 'about' && <AboutView status={status} />}
         {view === 'connect' && <ConnectView />}
         {view === 'concierge' && ConciergeView && (

@@ -93,6 +93,14 @@ export const EVIDENCE_LEVEL_LABEL = {
 // §2.8 목록 유형 (3종)
 export const LIST_TYPE_LABEL = { FILE: '파일', API: 'API', STD: '표준' }
 
+// 계열 후보 검토 상태(v1.8) — UNREVIEWED는 '검토 전'이지 문제·미확정 실패가 아니다
+export const FAMILY_REVIEW_LABEL = {
+  UNREVIEWED: '검토 전',
+  CONFIRMED_FAMILY: '계열 확정',
+  LEGITIMATE_SPLIT: '정당한 분리',
+  NOT_A_FAMILY: '계열 아님',
+}
+
 // 완전성 점검 필드(열린 사전 — 점수의 분해 근거 체크리스트)
 export const COMPLETENESS_FIELD_LABEL = {
   title: '제목', theme: '분류', org_name: '제공기관', update_cycle: '갱신주기',
