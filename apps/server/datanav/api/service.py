@@ -236,9 +236,11 @@ class Service:
 
         q_tokens = [t.lower() for t in re.split(r"\s+", query.strip()) if t] if query and query.strip() else []
         items = []
-        for r in rows:
+        for i, r in enumerate(rows):
             rec = row_to_record(r)
             item = self._summary(rec)
+            # v1.8 additive: 서버 정렬의 절대 순위 — score 부호 오독과 무관한 정본 순위
+            item["rank"] = offset + i + 1
             if rec.get("score") is not None:
                 item["score"] = round(rec["score"], 4)
             if q_tokens:
@@ -260,6 +262,9 @@ class Service:
                 # v1.5 additive: 정렬 방향을 사실로 노출(프론트의 문자열 패턴 추론 제거)
                 "direction": "desc",
                 "basis": "modified_date" if (not fts_mode or sort == "modified") else "relevance",
+                # v1.8 additive: score 해석 방향 — SQLite FTS5 bm25()는 낮을수록 상위(음수).
+                # sort=modified여도 score 값 자체의 의미는 동일하다(정렬 기준은 basis가 말한다).
+                "scoreDirection": "LOWER_IS_MORE_RELEVANT" if fts_mode else "NOT_APPLICABLE",
             },
         }
         rules = [RULE_RANKING, RULE_REGION, RULE_IDENTITY]
