@@ -206,7 +206,8 @@ export default function App() {
           이루어집니다.
         </p>
         <p>
-          {status && <>스냅샷 {status.data.currentSnapshot} · 목록 {status.data.counts.datasets.toLocaleString()}건 · </>}
+          {/* 스냅샷·목록 규모는 관측 현황이 정식 표기 — 푸터는 저장소·이력·개인정보 안내만 */}
+          <a href="https://github.com/hike-lab/public-data-lens" target="_blank" rel="noreferrer">GitHub 저장소</a> ·{' '}
           <button className="footer-link" onClick={() => goto('changes')}>변경 이력</button> ·
           이용 기록에는 IP 주소를 저장하지 않습니다. DNT/GPC 설정으로 수집을 거부할 수 있습니다.{' '}
           <a href="/api/resources/privacy" target="_blank" rel="noreferrer">개인정보·로그 안내</a>
