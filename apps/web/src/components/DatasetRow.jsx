@@ -20,8 +20,8 @@ function CompletenessBadges({ c }) {
         <span key={k} className="key-field">{KEY_FIELD_LABEL[k]} ✓</span>
       ))}
       <span className="fill-count">
-        메타데이터 {c.filledFields}/{c.totalFields} 항목
-        {c.typical ? ' · 표준 수준' : ` · 상위 ${c.topPercent}%`}
+        메타데이터 {c.totalFields}개 항목 중 {c.filledFields}개 기재
+        {c.typical ? ' · 기재 수준: 표준' : ` · 같은 유형 중 상위 ${c.topPercent}%`}
       </span>
     </span>
   )
@@ -40,7 +40,7 @@ export default function DatasetRow({ item, onOpen, compared, compareFull, onTogg
           <span>{item.orgName}</span>
           {item.theme?.top && <span>{item.theme.top}{item.theme.sub ? ` › ${item.theme.sub}` : ''}</span>}
           {item.formats?.length > 0 && <span>{item.formats.join(' · ')}</span>}
-          {item.rowCountListed != null && <span>행 {item.rowCountListed.toLocaleString()}</span>}
+          {item.rowCountListed != null && <span>{item.rowCountListed.toLocaleString()}행</span>}
         </div>
         {item.matchedColumns && (
           <p className="matched-columns">
@@ -50,7 +50,7 @@ export default function DatasetRow({ item, onOpen, compared, compareFull, onTogg
         {/* v1.6: '왜 이 결과인가' — 검색어가 나타난 필드(서버 사실, 프론트 재추정 아님) */}
         {item.matchedFields?.length > 0 && (
           <p className="matched-columns">
-            검색어 일치: {item.matchedFields.map((f) => MATCH_FIELD_LABEL[f] || f).join(', ')}
+            검색어가 일치한 항목: {item.matchedFields.map((f) => MATCH_FIELD_LABEL[f] || f).join(', ')}
           </p>
         )}
         <div className="row-badges">
@@ -67,11 +67,11 @@ export default function DatasetRow({ item, onOpen, compared, compareFull, onTogg
             disabled={!compared && compareFull}
             onChange={() => onToggleCompare(item.recordId)}
           />
-          비교
+          비교하기
         </label>
         {item.portalUrl && (
           <a href={item.portalUrl} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>
-            포털 원문 ↗
+            포털 원문 보기 ↗
           </a>
         )}
       </div>

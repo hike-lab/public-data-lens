@@ -7,14 +7,14 @@ describe('EvidenceRow', () => {
   it('CATALOG_METADATA_ONLY: 라벨·코드·미확인 부연을 함께 표시한다', () => {
     const { container } = render(<EvidenceRow level="CATALOG_METADATA_ONLY" />)
     const t = container.textContent
-    expect(t).toContain('메타데이터 기준')
+    expect(t).toContain('목록 정보')
     expect(t).toContain('CATALOG_METADATA_ONLY')
-    expect(t).toContain('실제 데이터 내용은 확인되지 않았습니다')
+    expect(t).toContain('실제 데이터의 내용은 확인하지 않았습니다')
   })
 
   it('FILE_OBSERVATION: 관측 라벨과 표본 한정 부연을 표시한다', () => {
     const { container } = render(<EvidenceRow level="FILE_OBSERVATION" />)
-    expect(container.textContent).toContain('실제 파일 구조 관측')
+    expect(container.textContent).toContain('실제 파일 확인')
     expect(container.textContent).toContain('표본 한정')
   })
 
@@ -47,7 +47,7 @@ describe('RegionBadges', () => {
     expect(badges[0].className).toContain('explicit')
     expect(badges[0].querySelector('.inf-mark')).toBeNull()
     expect(badges[1].className).toContain('inferred')
-    expect(badges[1].querySelector('.inf-mark').textContent).toBe('추론')
+    expect(badges[1].querySelector('.inf-mark').textContent).toBe('지역 정보 추론')
   })
 
   it('short 옵션은 표시 축약일 뿐 기본은 서버 값 그대로다', () => {

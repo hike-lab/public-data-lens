@@ -159,13 +159,13 @@ function OverviewLens({ ds }) {
 
       <div className="prop-grid">
         <Prop k="분류" v={ds.theme?.top ? `${ds.theme.top}${ds.theme.sub ? ' › ' + ds.theme.sub : ''}` : '—'} />
-        <Prop k="포맷" v={ds.formats?.join(', ') || '—'} />
-        <Prop k="업데이트 주기" v={ds.updateCycleRaw || '—'} />
-        <Prop k="이용허락" v={ds.license?.raw || '—'} />
+        <Prop k="제공 형식" v={ds.formats?.join(', ') || '—'} />
+        <Prop k="갱신 주기" v={ds.updateCycleRaw || '—'} />
+        <Prop k="이용 조건" v={ds.license?.raw || '—'} />
         <Prop k="등록일" v={ds.createdDate || '—'} />
         <Prop k="수정일" v={ds.modifiedDate || '—'} />
-        <Prop k="공간범위" v={ds.spatial || '미기재'} />
-        <Prop k="시간범위" v={ds.temporal || '미기재'} />
+        <Prop k="공간 범위" v={ds.spatial || '목록에 기재되지 않음'} />
+        <Prop k="시간 범위" v={ds.temporal || '목록에 기재되지 않음'} />
         {ds.rowCount != null && <Prop k="전체 행" v={ds.rowCount.toLocaleString()} />}
         {ds.apiType && <Prop k="API 유형" v={ds.apiType} />}
       </div>
@@ -175,12 +175,12 @@ function OverviewLens({ ds }) {
           className="completeness large"
           title={`${ds.completeness.profile} 프로파일 · ${ds.completeness.rule}`}
         >
-          메타데이터 {ds.completeness.filledFields}/{ds.completeness.totalFields} 항목 기재
+          메타데이터 {ds.completeness.totalFields}개 항목 중 {ds.completeness.filledFields}개 기재
           <small>
-            {' '}({ds.completeness.profile} 프로파일 ·{' '}
+            {' '}({ds.completeness.profile} 유형 ·{' '}
             {ds.completeness.typical
-              ? `동일 유형의 ${ds.completeness.typicalShare}%와 같은 표준 수준`
-              : `유형 내 상위 ${ds.completeness.topPercent}%`})
+              ? `같은 유형의 ${ds.completeness.typicalShare}%가 동일한 기재 수준`
+              : `같은 유형 중 상위 ${ds.completeness.topPercent}%`})
           </small>
         </span>
         <span className={`freshness ${fresh.cls}`} title={ds.freshness?.note || ''}>
@@ -201,7 +201,7 @@ function OverviewLens({ ds }) {
 
       {ds.description && (
         <>
-          <h3>설명 <small className="desc-src">(기관 원문)</small></h3>
+          <h3>데이터 설명 <small className="desc-src">(제공 기관 원문)</small></h3>
           {ds.description.length > 220 ? (
             /* 긴 원문은 접는다(P1) — 서비스가 요약을 생성하지는 않는다(§8 언어 규칙) */
             <details className="desc-fold">
@@ -221,15 +221,15 @@ function OverviewLens({ ds }) {
       )}
       {ds.keywords?.length > 0 && (
         <div className="keywords">
-          <span className="examples-label">원문 키워드</span>
+          <span className="examples-label">제공 기관이 등록한 키워드</span>
           {ds.keywords.map((k) => <span key={k} className="chip small">{k}</span>)}
         </div>
       )}
 
       <div className="portal-box">
         <p>
-          목록키 <code>{ds.portal.listKey}</code> · {ds.portal.orgName} · 목록 기준{' '}
-          {ds.portal.listBaseDate} · 분석 기준 {ds.portal.analyzedAt?.slice(0, 10)}
+          목록 ID <code>{ds.portal.listKey}</code> · 제공 기관 {ds.portal.orgName} · 목록 스냅샷{' '}
+          {ds.portal.listBaseDate} · 분석 기준일 {ds.portal.analyzedAt?.slice(0, 10)}
         </p>
         {ds.portal.listUrl && (
           <a className="portal-link" href={ds.portal.listUrl} target="_blank" rel="noreferrer">

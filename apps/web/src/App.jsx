@@ -199,16 +199,17 @@ export default function App() {
 
       <footer className="footer">
         <p>
-          본 결과는 공공데이터포털 목록 메타데이터 기반이며 실제 데이터의 내용·품질·결합
-          가능성을 보증하지 않습니다. 모든 원문 접근은{' '}
-          <a href="https://www.data.go.kr" target="_blank" rel="noreferrer">공공데이터포털</a>로
-          연결됩니다.
+          이 서비스의 결과는 공공데이터포털의 목록 정보와 일부 실제 파일에서 확인한 구조
+          정보를 바탕으로 합니다. 실제 데이터의 내용과 품질, 다른 데이터와 함께 사용할 수
+          있는지는 보증하지 않습니다. 원문 확인과 데이터 이용은{' '}
+          <a href="https://www.data.go.kr" target="_blank" rel="noreferrer">공공데이터포털</a>에서
+          이루어집니다.
         </p>
         <p>
           {status && <>스냅샷 {status.data.currentSnapshot} · 목록 {status.data.counts.datasets.toLocaleString()}건 · </>}
           <button className="footer-link" onClick={() => goto('changes')}>변경 이력</button> ·
-          이용 기록은 익명 수집되며 DNT/GPC로 거부할 수 있습니다.{' '}
-          <a href="/api/resources/privacy" target="_blank" rel="noreferrer">개인정보·로그 고지</a>
+          이용 기록에는 IP 주소를 저장하지 않습니다. DNT/GPC 설정으로 수집을 거부할 수 있습니다.{' '}
+          <a href="/api/resources/privacy" target="_blank" rel="noreferrer">개인정보·로그 안내</a>
         </p>
       </footer>
     </div>

@@ -60,15 +60,15 @@ export default function ObservatoryView({ status }) {
     <section className="observatory">
       <h2 className="explore-title">관측 현황{snapshot && <> — {snapshot} 스냅샷</>}</h2>
       <p className="result-meta">
-        현재 스냅샷에서 서버가 관측한 사실입니다. 평가나 순위가 아니라, 무엇이 확인되었고
-        무엇이 아직 확인되지 않았는지를 보여줍니다. 모든 수치는 판정 규칙 버전과 함께
-        산출됩니다.
+        이 페이지는 현재 스냅샷에서 확인된 사실을 보여줍니다. 평가하거나 순위를 매기는 것이
+        아니라, 무엇을 확인했고 무엇을 아직 확인하지 못했는지를 구분합니다. 모든 수치에는
+        적용한 규칙과 버전이 기록됩니다.
       </p>
 
       <div className="home-block">
-        <h3>규모와 제공 유형</h3>
+        <h3>데이터 규모와 제공 유형</h3>
         {counts && (
-          <p className="result-meta">목록 {counts.datasets.toLocaleString()}건이 등재되어 있습니다.</p>
+          <p className="result-meta">공공데이터포털의 목록 {counts.datasets.toLocaleString()}건이 반영되어 있습니다.</p>
         )}
         {listType ? (
           <Bars buckets={listType.buckets.map((b) => ({ ...b, key: LIST_TYPE_LABEL[b.key] || b.key }))} />
@@ -76,26 +76,26 @@ export default function ObservatoryView({ status }) {
       </div>
 
       <div className="home-block">
-        <h3>실파일 구조 관측</h3>
+        <h3>실제 파일 구조 확인 현황</h3>
         {coverage ? (
           <>
             <p className="obs-figure">
-              파일형 {coverage.fileRecordsTotal.toLocaleString()}건 중{' '}
-              <strong>{coverage.recordsAvailable.toLocaleString()}건</strong>의 실제 컬럼 구조가
-              관측되어 있습니다.
+              파일로 제공되는 {coverage.fileRecordsTotal.toLocaleString()}건 가운데{' '}
+              <strong>{coverage.recordsAvailable.toLocaleString()}건</strong>은 실제 컬럼 구조를
+              확인했습니다.
             </p>
             <p className="result-meta">
-              아직 관측되지 않은 목록은 수집 대기 상태입니다 — 데이터의 품질 문제가 아닙니다.
+              아직 확인하지 못한 목록은 수집 대기 상태입니다. 데이터 품질이 낮다는 뜻은 아닙니다.
             </p>
           </>
-        ) : <p className="result-meta">이 서버 릴리스는 구조 관측 커버리지를 제공하지 않습니다.</p>}
+        ) : <p className="result-meta">현재 서비스 버전에서는 실제 파일 구조를 확인한 범위를 제공하지 않습니다.</p>}
       </div>
 
       <div className="home-block">
-        <h3>목록 메타데이터 완전성 — 유형별 프로파일</h3>
+        <h3>목록 정보 기재 현황 — 제공 유형별</h3>
         <p className="result-meta">
-          유형(파일/API/표준)마다 평가 항목 수가 달라 프로파일별로만 산출합니다.
-          프로파일 간 합산·직접 비교는 하지 않습니다.
+          파일·API·표준데이터는 확인하는 항목 수가 서로 다릅니다. 따라서 같은 유형 안에서만
+          산출하며, 유형 간 수치를 합치거나 직접 비교하지 않습니다.
         </p>
         {completeness ? (
           <ul className="obs-profiles">
@@ -112,13 +112,13 @@ export default function ObservatoryView({ status }) {
       </div>
 
       <div className="home-block">
-        <h3>주제 분포 — 상위 {theme ? theme.buckets.length : 0}개</h3>
+        <h3>주제별 분포 — 목록 수 상위 {theme ? theme.buckets.length : 0}개</h3>
         {theme ? <Bars buckets={theme.buckets} /> : <p className="result-meta">주제 분포를 불러오지 못했습니다.</p>}
       </div>
 
       <div className="home-block">
-        <h3>기관 분포 — 목록 수 상위 {orgs ? orgs.buckets.length : 0}개 기관</h3>
-        <p className="result-meta">목록 수는 개방 활동의 규모이지 데이터 품질의 순위가 아닙니다.</p>
+        <h3>제공 기관별 분포 — 목록 수 상위 {orgs ? orgs.buckets.length : 0}개 기관</h3>
+        <p className="result-meta">목록 수는 기관의 데이터 개방 규모를 보여줄 뿐, 데이터 품질 순위는 아닙니다.</p>
         {orgs ? (
           <Bars
             buckets={orgs.buckets}
@@ -133,22 +133,23 @@ export default function ObservatoryView({ status }) {
       </div>
 
       <div className="home-block">
-        <h3>데이터 계열 후보</h3>
+        <h3>같은 계열로 보이는 데이터</h3>
         {!family ? (
           <p className="result-meta">계열 통계를 불러오지 못했습니다.</p>
         ) : family.available === false ? (
           <p className="result-meta">
-            이 릴리스에는 계열 후보가 아직 산출되지 않았습니다 — 0건이라는 뜻이 아닙니다.
+            현재 서비스 버전에서는 같은 계열로 보이는 데이터 후보를 아직 산출하지 않았습니다.
+            후보가 0건이라는 뜻은 아닙니다.
           </p>
         ) : (
           <>
             <p className="obs-figure">
-              같은 계열로 보이는 후보 {family.familyCandidates.families.toLocaleString()}개
-              (목록 {family.familyCandidates.memberRecords.toLocaleString()}건)가 자동
-              탐지되어 있습니다.
+              같은 계열로 보이는 후보 묶음 {family.familyCandidates.families.toLocaleString()}개
+              (목록 {family.familyCandidates.memberRecords.toLocaleString()}건)를 자동으로
+              찾았습니다.
             </p>
             <p className="result-meta">
-              자동 탐지 후보이며 확정된 계열이 아닙니다.{' '}
+              자동으로 찾은 후보이며, 같은 계열로 확정한 것은 아닙니다.{' '}
               {Object.entries(family.familyCandidates.byReviewStatus || {})
                 .map(([k, n]) => `${FAMILY_REVIEW_LABEL[k] || k} ${n.toLocaleString()}건`)
                 .join(' · ')}
@@ -158,18 +159,18 @@ export default function ObservatoryView({ status }) {
       </div>
 
       <div className="home-block">
-        <h3>월간 변경 관측</h3>
+        <h3>월별 변경 현황</h3>
         {!changes ? (
           <p className="result-meta">변경 통계를 불러오지 못했습니다.</p>
         ) : changes.baseSnapshot === null ? (
           <p className="result-meta">
-            월간 스냅샷이 2개 이상 축적되면 이 자리에서 신규·변경·미관측 통계를 제공합니다.
-            지금은 첫 스냅샷 축적 단계입니다.
+            월간 스냅샷이 두 개 이상 쌓이면 신규·변경·미관측 통계를 제공합니다. 현재는 첫
+            스냅샷을 축적하는 단계입니다.
           </p>
         ) : (
           <>
             <p className="obs-figure">
-              {changes.baseSnapshot} → {changes.currentSnapshot} 사이에 관측된 변경입니다.
+              {changes.baseSnapshot}부터 {changes.currentSnapshot}까지 확인된 변경입니다.
             </p>
             {changes.summary && (
               <ul className="obs-profiles">
@@ -182,8 +183,9 @@ export default function ObservatoryView({ status }) {
               </ul>
             )}
             <p className="result-meta">
-              스냅샷에서 관측되지 않음(MISSING_FROM_SNAPSHOT)은 폐기 확정이 아닙니다 —
-              폐기는 OFFICIALLY_WITHDRAWN으로만 표기합니다.
+              ‘스냅샷에서 확인되지 않음(MISSING_FROM_SNAPSHOT)’은 데이터가 폐기되었다는 뜻이
+              아닙니다. 공식적으로 폐기된 경우에만 ‘공식 폐기(OFFICIALLY_WITHDRAWN)’로
+              표시합니다.
             </p>
           </>
         )}

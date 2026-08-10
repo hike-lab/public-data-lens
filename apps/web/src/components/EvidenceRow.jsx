@@ -3,7 +3,7 @@
 import { EVIDENCE_LABEL, EVIDENCE_LEVEL_LABEL } from '../labels.js'
 
 const LEVEL_NOTE = {
-  CATALOG_METADATA_ONLY: '실제 데이터 내용은 확인되지 않았습니다',
+  CATALOG_METADATA_ONLY: '실제 데이터의 내용은 확인하지 않았습니다',
   FILE_OBSERVATION: '관측 표본 한정 — 전체 품질을 보증하지 않습니다',
 }
 
@@ -18,7 +18,7 @@ export function RegionBadges({ regions, short }) {
       title={`${EVIDENCE_LABEL[r.evidence] || r.evidence} · 신뢰도 ${r.confidence}`}
     >
       {short ? r.name.replace(/(특별자치|특별|광역)?(시|도)$/, '') : r.name}
-      {r.evidence !== 'EXPLICIT_SPATIAL' && <span className="inf-mark">추론</span>}
+      {r.evidence !== 'EXPLICIT_SPATIAL' && <span className="inf-mark">지역 정보 추론</span>}
     </span>
   ))
 }
@@ -26,7 +26,7 @@ export function RegionBadges({ regions, short }) {
 export default function EvidenceRow({ level, snapshot, rules, observation, className, children }) {
   const parts = []
   if (level) {
-    parts.push(`근거 수준: ${EVIDENCE_LEVEL_LABEL[level] || level}(${level})`)
+    parts.push(`확인 근거: ${EVIDENCE_LEVEL_LABEL[level] || level}(${level})`)
     if (LEVEL_NOTE[level]) parts.push(LEVEL_NOTE[level])
   }
   if (observation) {

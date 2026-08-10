@@ -44,18 +44,18 @@ const status = envelope({
 describe('ObservatoryView', () => {
   it('계열 미산출을 0건이 아니라 상태로 표기한다', async () => {
     render(<ObservatoryView status={status} />)
-    await waitFor(() => expect(screen.getByText(/0건이라는 뜻이 아닙니다/)).toBeTruthy())
+    await waitFor(() => expect(screen.getByText(/0건이라는 뜻은 아닙니다/)).toBeTruthy())
   })
 
   it('첫 스냅샷 축적 단계를 고장이 아니라 사실로 안내한다', async () => {
     render(<ObservatoryView status={status} />)
-    await waitFor(() => expect(screen.getByText(/첫 스냅샷 축적 단계/)).toBeTruthy())
+    await waitFor(() => expect(screen.getByText(/스냅샷을 축적하는 단계/)).toBeTruthy())
   })
 
   it('완전성은 프로파일별로만 표기하고 합산 수치를 만들지 않는다', async () => {
     const { container } = render(<ObservatoryView status={status} />)
     await waitFor(() => expect(container.querySelectorAll('.obs-profiles li').length).toBeGreaterThan(0))
-    expect(container.textContent).toContain('프로파일 간 합산·직접 비교는 하지 않습니다')
+    expect(container.textContent).toContain('유형 간 수치를 합치거나 직접 비교하지 않습니다')
     // average null은 0%가 아니라 '산출 대상 없음'
     expect(container.textContent).toContain('산출 대상 없음')
     expect(container.textContent).not.toContain('0.0%')
@@ -63,7 +63,7 @@ describe('ObservatoryView', () => {
 
   it('구조 미관측을 수집 상태로 설명한다(품질 문제 프레임 금지)', async () => {
     render(<ObservatoryView status={status} />)
-    await waitFor(() => expect(screen.getByText(/품질 문제가 아닙니다/)).toBeTruthy())
+    await waitFor(() => expect(screen.getByText(/품질이 낮다는 뜻은 아닙니다/)).toBeTruthy())
   })
 
   it('기관 버킷에 서버 교차 집계를 그대로 부기한다', async () => {

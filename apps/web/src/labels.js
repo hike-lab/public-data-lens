@@ -23,9 +23,9 @@ export const LICENSE_LABEL = {
 export const CHANGE_STATUS_LABEL = {
   ADDED: '신규',
   MODIFIED: '변경',
-  MISSING_FROM_SNAPSHOT: '스냅샷 부재',
+  MISSING_FROM_SNAPSHOT: '스냅샷에서 확인되지 않음',
   REAPPEARED: '재등장',
-  POSSIBLE_IDENTITY_CHANGE: '정체성 변경 의심',
+  POSSIBLE_IDENTITY_CHANGE: '동일 데이터 여부 확인 필요',
   OFFICIALLY_WITHDRAWN: '공식 폐기',
 }
 
@@ -81,13 +81,13 @@ export const exampleStatusLabel = (status, examplesPublic) => {
 export const FRESHNESS_LABEL = {
   FRESH: { text: '최신', cls: 'fresh' },
   POSSIBLY_STALE: { text: '갱신 지연 가능', cls: 'stale' },
-  UNKNOWN: { text: '최신성 판단 불가', cls: 'unknown' },
+  UNKNOWN: { text: '최신성 확인 불가', cls: 'unknown' },
 }
 
 // §2.2 근거 수준 (2종)
 export const EVIDENCE_LEVEL_LABEL = {
-  CATALOG_METADATA_ONLY: '메타데이터 기준',
-  FILE_OBSERVATION: '실제 파일 구조 관측',
+  CATALOG_METADATA_ONLY: '목록 정보',
+  FILE_OBSERVATION: '실제 파일 확인',
 }
 
 // §2.8 목록 유형 (3종)

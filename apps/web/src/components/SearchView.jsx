@@ -236,7 +236,7 @@ export default function SearchView({
           {/* 제목=행동 유도 질문, 부제=철학 선언(숫자 없음 — 건수는 소개·푸터가 담당) */}
           <h2 className="hero-title">어떤 데이터를 찾고 계신가요?</h2>
           <p className="hero-sub">
-            공공데이터를 찾는 것에서, 이해하고 활용하는 것으로
+            공공데이터를 찾고, 이해하고, 활용하는 데 필요한 근거를 제공합니다.
           </p>
         </div>
       )}
@@ -327,7 +327,7 @@ export default function SearchView({
 
       {pristine && (
         <div className="examples">
-          <span className="examples-label">예시</span>
+          <span className="examples-label">예:</span>
           {(mode === 'keyword' ? EXAMPLES : mode === 'columns' ? COLUMN_EXAMPLES : PURPOSE_EXAMPLES).map((ex) => (
             <button
               key={ex}
@@ -351,7 +351,7 @@ export default function SearchView({
           className="browse-all"
           onClick={() => { setPristine(false); runSearch() }}
         >
-          전체 목록 둘러보기 →
+          데이터 목록 둘러보기 →
         </button>
       )}
 
@@ -368,8 +368,8 @@ export default function SearchView({
           >
             {/* 정렬·검색 기준은 계약 필드(ranking.basis, v1.5)에서 — 문자열 추론 금지 */}
             총 {result.data.totalEstimate.toLocaleString()}건
-            {result.data.ranking?.basis === 'relevance' && ' · 관련도순(제목·키워드·설명·기관 일치)'}
-            {result.data.ranking?.basis === 'modified_date' && ' · 최신 수정순'}
+            {result.data.ranking?.basis === 'relevance' && ' · 관련도순(제목·키워드·설명·제공 기관 기준)'}
+            {result.data.ranking?.basis === 'modified_date' && ' · 최근 수정순'}
             {result.data.coverage && (
               <> · <CoveragePopulation
                 searched={result.data.coverage.searchedRecords}
@@ -394,7 +394,7 @@ export default function SearchView({
                   }}
                 >
                   <option value="">관련도순</option>
-                  <option value="modified">최신 수정순</option>
+                  <option value="modified">최근 수정순</option>
                 </select>
               )}
               {['listType', 'region', 'updateCycle', 'format'].filter((k) => filters[k]).map((k) => (

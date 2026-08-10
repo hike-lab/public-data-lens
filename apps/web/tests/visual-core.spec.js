@@ -17,7 +17,7 @@ async function searchFor(page, text) {
 
 test('홈 — 검색 단독(pristine)', async ({ page }) => {
   await expect(page.locator('.hero-title')).toContainText('어떤 데이터를 찾고 계신가요')
-  await expect(page.locator('.hero-sub')).toContainText('이해하고 활용하는 것으로')
+  await expect(page.locator('.hero-sub')).toContainText('근거를 제공합니다')
   await expect(page.locator('.examples .chip').first()).toBeVisible()
   // 홈은 검색으로 끝난다 — 쇼케이스·투명성 블록은 둘러보기·소개로 이동
   await expect(page.locator('.home-block')).toHaveCount(0)
@@ -30,7 +30,7 @@ test('홈 — 검색 단독(pristine)', async ({ page }) => {
 test('둘러보기 — 서사·해부·구조 실물', async ({ page }) => {
   await page.locator('.nav-link', { hasText: '둘러보기' }).click()
   // §3 #3 탐색 서사 — 과정(해석→후보→한계)이 실제 plan 응답으로 렌더된다
-  await expect(page.locator('.story-steps')).toContainText('목적 해석')
+  await expect(page.locator('.story-steps')).toContainText('목적 파악')
   await expect(page.locator('.story-block')).toContainText('DRAFT')
   // §3 #5 Dataset anatomy — 원본 컬럼명 그대로 + 관측 출처
   await expect(page.locator('.anatomy-block .structure-table')).toBeVisible()
@@ -46,9 +46,9 @@ test('관측 현황 — 사실 표현·미산출 상태·축적 단계', async (
   await expect(page.locator('.obs-bars').first()).toBeVisible()
   await expect(page.locator('.obs-extra').first()).toContainText('파일')
   // 계열 미산출은 0건이 아니라 상태로 표기(실패색 없음)
-  await expect(page.locator('.observatory')).toContainText('0건이라는 뜻이 아닙니다')
+  await expect(page.locator('.observatory')).toContainText('0건이라는 뜻은 아닙니다')
   // 첫 스냅샷 축적 단계 — 변경 통계 부재는 사실로 안내
-  await expect(page.locator('.observatory')).toContainText('첫 스냅샷 축적 단계')
+  await expect(page.locator('.observatory')).toContainText('스냅샷을 축적하는 단계')
   await shoot(page, 'observatory.png')
 })
 
@@ -56,7 +56,7 @@ test('검색 결과 — 어린이 보호구역', async ({ page }) => {
   await searchFor(page, '어린이 보호구역')
   await expect(page.locator('.toolbar .result-meta')).toContainText('총')
   // v1.6: '왜 이 결과인가' — 서버가 준 matchedFields 표시(프론트 재추정 아님)
-  await expect(page.locator('.matched-columns').first()).toContainText('검색어 일치')
+  await expect(page.locator('.matched-columns').first()).toContainText('검색어가 일치한 항목')
   await expect(page.locator('.sort-select')).toBeVisible()
   await shoot(page, 'search-results.png')
 })
@@ -187,7 +187,7 @@ test('소개 — 투명성 블록 포함', async ({ page }) => {
 
 test('AI에 연결 — capability 데모가 설치 안내보다 먼저', async ({ page }) => {
   await page.locator('.nav-link', { hasText: 'MCP 연결' }).click()
-  await expect(page.locator('.connect h2')).toContainText('MCP는 그 능력을 AI 안으로')
+  await expect(page.locator('.connect h2')).toContainText('AI에서도 사용할 수 있습니다')
   await expect(page.locator('.mcp-url code')).toContainText('/projects/public-data-lens/mcp')
   await expect(page.locator('.cap-demo')).toContainText('후보')
   await expect(page.locator('.cap-demo')).not.toContainText('추천')
