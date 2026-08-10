@@ -199,17 +199,16 @@ export default function App() {
 
       <footer className="footer">
         <p>
-          이 서비스의 결과는 공공데이터포털의 목록 정보와 일부 실제 파일에서 확인한 구조
-          정보를 바탕으로 합니다. 실제 데이터의 내용과 품질, 다른 데이터와 함께 사용할 수
-          있는지는 보증하지 않습니다. 원문 확인과 데이터 이용은{' '}
+          이 서비스는 공공데이터포털의 목록 정보와 일부 실제 파일에서 확인한 구조 정보를
+          바탕으로 합니다. 실제 데이터의 내용과 품질, 다른 데이터와 함께 사용할 수 있는지는
+          보증하지 않습니다. 모든 데이터의 다운로드는{' '}
           <a href="https://www.data.go.kr" target="_blank" rel="noreferrer">공공데이터포털</a>에서
-          이루어집니다.
+          가능합니다.
         </p>
         <p>
-          {/* 스냅샷·목록 규모는 관측 현황이 정식 표기 — 푸터는 저장소·이력·개인정보 안내만 */}
-          <a href="https://github.com/hike-lab/public-data-lens" target="_blank" rel="noreferrer">GitHub 저장소</a> ·{' '}
-          <button className="footer-link" onClick={() => goto('changes')}>변경 이력</button> ·
-          이용 기록에는 IP 주소를 저장하지 않습니다. DNT/GPC 설정으로 수집을 거부할 수 있습니다.{' '}
+          {/* IP·옵트아웃 상세는 링크된 개인정보·로그 안내가 정본 */}
+          <a href="https://github.com/hike-lab/public-data-lens" target="_blank" rel="noreferrer">GitHub</a> ·{' '}
+          <button className="footer-link" onClick={() => goto('changes')}>변경 이력</button> ·{' '}
           <a href="/api/resources/privacy" target="_blank" rel="noreferrer">개인정보·로그 안내</a>
         </p>
       </footer>
