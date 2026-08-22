@@ -25,6 +25,7 @@ _RO = ToolAnnotations(readOnlyHint=True, idempotentHint=True)
 from ..config import BASE_URI, CURRENT_POINTER, DISCLAIMER
 from ..pipeline.jsonld import JSONLD_CONTEXT
 from ..rules import load_registry
+from .asgi_guard import Utf8BodyGuard
 from .errors import DatanavError
 from .plan import build_plan
 from .service import Service
@@ -402,7 +403,25 @@ def main() -> None:
         acc["handlers"] = []
         acc["level"] = "CRITICAL"
         acc["propagate"] = False
+        _run_streamable_http()
+        return
     mcp.run(transport=transport)  # type: ignore[arg-type]
+
+
+def _run_streamable_http() -> None:
+    """FastMCP.run_streamable_http_async와 같은 기동이되, 앞단에 Utf8BodyGuard를 둔다.
+    SDK의 POST 핸들러가 본문 디코딩 실패를 -32603으로 뭉개므로(Issue #1 항목 2)
+    전송 계층에서 먼저 판정해 원인을 알려준다."""
+    import uvicorn
+
+    app = mcp.streamable_http_app()
+    app.add_middleware(Utf8BodyGuard)
+    uvicorn.run(
+        app,
+        host=mcp.settings.host,
+        port=mcp.settings.port,
+        log_level=mcp.settings.log_level.lower(),
+    )
 
 
 if __name__ == "__main__":
