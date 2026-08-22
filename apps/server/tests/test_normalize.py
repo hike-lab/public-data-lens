@@ -1,5 +1,7 @@
 from datanav.pipeline.normalize import (
     detect_issues,
+    excel_serial_to_iso,
+    normalize_date,
     normalize_formats,
     normalize_keywords,
     normalize_row,
@@ -96,3 +98,60 @@ def test_issue_nonnumeric_count():
     assert rec["row_count"] is None
     types = {i["issue_type"] for i in detect_issues(rec, bad)}
     assert "NEGATIVE_OR_NONNUMERIC_COUNT" in types
+
+
+# ------------------------------------------------- normalize-date-v1.0
+
+def test_iso_date_passes_through():
+    assert normalize_date("2012-12-06") == "2012-12-06"
+
+
+def test_excel_serial_is_converted():
+    """2026-07 스냅샷 실측: 41249 → 2012-12-06 (2026-06 스냅샷 대조 전건 일치)."""
+    assert excel_serial_to_iso("41249") == "2012-12-06"
+    assert excel_serial_to_iso("44834") == "2022-09-30"
+    assert excel_serial_to_iso("45912") == "2025-09-12"
+    assert normalize_date("41249") == "2012-12-06"
+
+
+def test_year_like_value_is_not_treated_as_serial():
+    """연도 4자리를 일련번호로 오인하지 않는다."""
+    assert excel_serial_to_iso("2026") is None
+    assert normalize_date("2026") == "2026"
+
+
+def test_out_of_range_serial_is_left_alone():
+    assert excel_serial_to_iso("12345") is None
+    assert excel_serial_to_iso("99999") is None
+
+
+def test_unrecognized_date_keeps_source_value():
+    """해석 불가 값을 버리지 않는다 — 원본값 추적(§8)."""
+    assert normalize_date("2026.07.31") == "2026.07.31"
+    assert normalize_date("-") is None
+
+
+def test_serial_date_is_observed_not_silently_fixed():
+    src = dict(SAMPLE, 등록일="41249", 수정일="44834")
+    rec = normalize_row(src, 2)
+    assert rec["created_date"] == "2012-12-06"
+    assert rec["modified_date"] == "2022-09-30"
+    types = {(i["field"], i["issue_type"]) for i in detect_issues(rec, src)}
+    assert ("등록일", "EXCEL_SERIAL_DATE_ARTIFACT") in types
+    assert ("수정일", "EXCEL_SERIAL_DATE_ARTIFACT") in types
+
+
+def test_clean_iso_dates_produce_no_date_issue():
+    rec = normalize_row(SAMPLE, 2)
+    date_issues = [
+        i for i in detect_issues(rec, SAMPLE)
+        if i["issue_type"] in ("EXCEL_SERIAL_DATE_ARTIFACT", "UNPARSEABLE_DATE_FORMAT")
+    ]
+    assert date_issues == []
+
+
+def test_unparseable_date_is_observed():
+    src = dict(SAMPLE, 수정일="2026.07.31")
+    rec = normalize_row(src, 2)
+    types = {(i["field"], i["issue_type"]) for i in detect_issues(rec, src)}
+    assert ("수정일", "UNPARSEABLE_DATE_FORMAT") in types

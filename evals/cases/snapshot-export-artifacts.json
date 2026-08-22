@@ -1,0 +1,72 @@
+{
+  "suite": "snapshot-export-artifacts",
+  "title": "발행자 내보내기 아티팩트 — 무엇이 실질 변경이고 무엇이 표기 요동인가",
+  "rules": ["normalize-date-v1.0", "diff-v1.1", "issue-detect-v1.0"],
+  "adr": "ADR-016",
+  "provenance": "2026-06/2026-07 공식 회차 및 2026-08 API 합성본 전수 대조(각 96,056 / 96,110 / 96,209행)",
+  "cases": [
+    {
+      "id": "date-serial-restored",
+      "given": {"column": "등록일", "value": "41249"},
+      "expect": {"created_date": "2012-12-06", "issue": "EXCEL_SERIAL_DATE_ARTIFACT"},
+      "why": "엑셀 1900 체계 일련번호. 2026-07 회차 API 11,960행에서 관측되었고 2026-06 회차와 11,929건 전건 일치로 환산 정확도가 검증됐다. 환산은 하되 관찰로 남긴다 — 조용히 고치면 재발을 놓친다."
+    },
+    {
+      "id": "year-like-value-not-a-serial",
+      "given": {"column": "등록일", "value": "2026"},
+      "expect": {"created_date": "2026", "issue": null},
+      "why": "연도 4자리를 일련번호로 오인하면 2026 → 1905-07-18이 된다. 범위 하한 30000이 이를 막는다."
+    },
+    {
+      "id": "unparseable-date-kept-and-observed",
+      "given": {"column": "수정일", "value": "2026.07.31"},
+      "expect": {"modified_date": "2026.07.31", "issue": "UNPARSEABLE_DATE_FORMAT"},
+      "why": "해석 못 하는 값을 버리지 않는다(§8 원본값 추적). 판단 불가는 나쁨이 아니며, 관찰로 드러내는 것이 옳다."
+    },
+    {
+      "id": "description-newline-churn-is-not-modified",
+      "given": {
+        "prev": "* 서울시농수산식품공사에서 제공중인 일일등락품목 API 입니다.* 신청시 사용자 인증번호",
+        "curr": "* 서울시농수산식품공사에서 제공중인 일일등락품목 API 입니다.\n* 신청시 사용자 인증번호"
+      },
+      "expect": {"status": null, "changed_fields": []},
+      "why": "2026-06 회차는 줄바꿈을 제거하고 2026-07 회차는 보존한다(0건 → 5,941건). 글자는 한 자도 바뀌지 않았다. 원시 비교는 6,202건을 거짓 MODIFIED로 만든다."
+    },
+    {
+      "id": "description-content-change-is-modified",
+      "given": {"prev": "첫 문장입니다.", "curr": "첫 문장입니다. 셋째 문장 추가."},
+      "expect": {"status": "MODIFIED", "changed_fields": ["description"]},
+      "why": "공백 둔감이 실질 변경을 삼켜서는 안 된다. 2026-06→07의 실질 설명 변경은 1,730건이며 이 수치가 보존되어야 한다."
+    },
+    {
+      "id": "format-case-churn-is-not-modified",
+      "given": {"prev": "CSV", "curr": "csv"},
+      "expect": {"status": null, "changed_fields": []},
+      "why": "normalize_formats가 대문자 토큰으로 환산한다. 원시값 추적은 확장자 표기 정책 변경 한 번에 전 행을 MODIFIED로 만든다."
+    },
+    {
+      "id": "empty-marker-churn-is-not-a-fill-rate-change",
+      "given": {"column": "파일데이터명", "prev": "", "curr": "-"},
+      "expect": {"file_data_name": null, "fill_rate_delta_pp": 0.0},
+      "why": "is_empty()의 EMPTY에 '-'가 포함된다. 원시 문자열로 채움률을 세면 2026-07 회차가 12.2pp '개선'된 것으로 보이지만 실제 변화는 없다. 수용 게이트는 정규화 후 값으로 센다."
+    },
+    {
+      "id": "counter-decrease-blocks-acceptance",
+      "given": {"column": "조회수", "prev": 12627, "curr": 12265},
+      "expect": {"gate": "BLOCK"},
+      "why": "조회수는 누적값이다. 2026-08 API 합성본은 96,080행 전부가 2026-07보다 낮아, 파일명과 달리 7월 중순 빈티지임이 드러났다. 카운터 단조성 하나가 이 판정을 자동화한다."
+    },
+    {
+      "id": "license-vocabulary-recoding-blocks-acceptance",
+      "given": {"column": "이용허락범위", "prev": "공공저작물 : 출처표시, 상업적 이용금지, 변경금지 (제 4유형)", "curr": "이용허락범위 제한 없음"},
+      "expect": {"gate": "BLOCK"},
+      "why": "2026-08 API 합성본에서 조건부 라이선스 9,593건이 '제한 없음'으로 반전됐고 그중 2,644건은 비영리 조건이 사라졌다. 어휘 집합의 과반 소멸을 차단 조건으로 둔다. 값이 없는 것보다 틀린 값이 위험하다."
+    },
+    {
+      "id": "missing-column-blocks-acceptance",
+      "given": {"column": "공간범위", "prev_fill_pct": 6.2, "curr_fill_pct": 0.0},
+      "expect": {"gate": "BLOCK", "collateral": "region evidence EXPLICIT_SPATIAL 3,732 → 0"},
+      "why": "셀 수로는 전체의 6%지만 EXPLICIT_SPATIAL(신뢰도 0.95)의 유일한 근거원이다. 정보량과 계약 영향은 비례하지 않는다."
+    }
+  ]
+}
