@@ -208,12 +208,14 @@ def search(
     pageSize: int = Query(default=20, ge=1, le=100),
     interpret: bool = False,
     sort: str | None = None,
+    orgMatch: str = "CONTAINS",
 ):
     result = _svc().search_datasets(
         query=query, theme=theme, org=org, fmt=format, update_cycle=updateCycle,
         license_code=license, list_type=listType, region=region,
         include_inferred=includeInferred, updated_after=updatedAfter,
         cursor=cursor, page_size=pageSize, interpret=interpret, sort=sort,
+        org_match=orgMatch,
     )
     # §12 지표용 주석 — 검색어 원문 정책은 고지문 참조(보존 12개월, 옵트아웃 시 미기록)
     filters = [k for k, v in [("theme", theme), ("org", org), ("format", format),
@@ -266,8 +268,8 @@ def changes(
 
 
 @app.get("/api/stats")
-def stats(axis: str, limit: int = 30):
-    return _svc().get_catalog_stats(axis, limit)
+def stats(axis: str, limit: int = 30, breakdown: str | None = None):
+    return _svc().get_catalog_stats(axis, limit, breakdown)
 
 
 # 공개 Resource의 HTTP 사본(정본 경로는 §7 — 배포 시 리버스 프록시로 연결)

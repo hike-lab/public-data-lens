@@ -394,11 +394,26 @@ OUTPUT_SCHEMAS: dict[str, dict] = {
             },
             {
                 "required": ["buckets"],
-                "properties": {"buckets": {"type": "array", "items": {
-                    "type": "object", "required": ["key", "count"],
-                    "properties": {"key": {"type": ["string", "null"]},
-                                   "count": {"type": "integer"}},
-                }}},
+                "properties": {
+                    "buckets": {"type": "array", "items": {
+                        "type": "object", "required": ["key", "count"],
+                        "properties": {
+                            "key": {"type": ["string", "null"]},
+                            "count": {"type": "integer"},
+                            "breakdown": {
+                                "type": "object",
+                                "description": "v1.8.0 additive: breakdown 지정 시 버킷 내 하위 분포 — "
+                                               "listType/format은 {값: 건수}, completeness는 프로파일별 "
+                                               "{count, averageCompleteness}(분모 상이 — 프로파일 간 합산 금지)",
+                            },
+                        },
+                    }},
+                    "breakdown": {
+                        "enum": ["listType", "format", "completeness"],
+                        "description": "v1.8.0 additive: 적용된 교차 집계 축(org: listType|format|completeness, theme: listType|format)",
+                    },
+                    "note": {"type": "string"},
+                },
             },
             {
                 "required": ["profiles"],

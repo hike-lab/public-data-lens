@@ -1539,3 +1539,16 @@ button:active:not(:disabled) { transform: var(--button-active-scale); }
 :root[data-surface='core'] .toolbar { margin-top: 28px; }
 :root[data-surface='core'] .search-home .search-shell { border-color: #cfd7e3; }
 :root[data-surface='core'] .search-home .search-shell:focus-within { border-color: var(--accent); }
+
+/* ---- 관측 현황(Observatory) — 서버 사실의 표현 전용, 실패색 미사용 ---- */
+.observatory { max-width: 860px; margin: 0 auto; }
+.obs-bars { list-style: none; padding: 0; margin: 8px 0 0; }
+.obs-bars li { display: flex; align-items: center; gap: 10px; padding: 4px 0; font-size: 13px; }
+.obs-key { flex: 0 0 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.obs-track { flex: 1 1 auto; height: 8px; background: var(--border, #e5e2da); border-radius: 4px; overflow: hidden; }
+.obs-fill { display: block; height: 100%; background: var(--accent, #14532d); border-radius: 4px; }
+.obs-count { flex: 0 0 auto; color: var(--muted); font-variant-numeric: tabular-nums; }
+.obs-extra { flex: 0 0 auto; color: var(--muted); font-size: 12px; }
+.obs-figure { margin: 8px 0 2px; font-size: 14px; }
+.obs-profiles { list-style: none; padding: 0; margin: 8px 0 0; }
+.obs-profiles li { display: flex; gap: 12px; padding: 3px 0; font-size: 13px; align-items: baseline; }

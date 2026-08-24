@@ -8,6 +8,7 @@ import DatasetProfile from './components/DatasetProfile.jsx'
 import AboutView from './components/AboutView.jsx'
 import ExploreView from './components/ExploreView.jsx'
 import ConnectView from './components/ConnectView.jsx'
+import ObservatoryView from './components/ObservatoryView.jsx'
 
 // 배포 표면(빌드 시 결정): 'core' = MCP 배포 동반 웹(비생성형만),
 // 'concierge' = 별도 컨시어지 서비스(컨시어지 중심 + 보조 검색), 'all' = 로컬 개발 기본
@@ -31,6 +32,7 @@ document.documentElement.dataset.surface = SURFACE
 const NAV_LINKS = [
   ...(HAS_CONCIERGE ? [{ id: 'concierge', label: 'AI 컨시어지' }] : []),
   { id: 'explore', label: '둘러보기' },
+  { id: 'observatory', label: '관측 현황' },
   { id: 'about', label: '소개' },
   { id: 'connect', label: 'MCP 연결' },
 ]
@@ -154,6 +156,7 @@ export default function App() {
           />
         )}
         {view === 'changes' && <ChangesView onOpen={openProfile} />}
+        {view === 'observatory' && <ObservatoryView status={status} />}
         {view === 'about' && <AboutView status={status} />}
         {view === 'connect' && <ConnectView />}
         {view === 'concierge' && ConciergeView && (
@@ -196,16 +199,17 @@ export default function App() {
 
       <footer className="footer">
         <p>
-          본 결과는 공공데이터포털 목록 메타데이터 기반이며 실제 데이터의 내용·품질·결합
-          가능성을 보증하지 않습니다. 모든 원문 접근은{' '}
-          <a href="https://www.data.go.kr" target="_blank" rel="noreferrer">공공데이터포털</a>로
-          연결됩니다.
+          이 서비스는 공공데이터포털의 목록 정보와 일부 실제 파일에서 확인한 구조 정보를
+          바탕으로 합니다. 실제 데이터의 내용과 품질, 다른 데이터와 함께 사용할 수 있는지는
+          보증하지 않습니다. 모든 데이터의 이용(다운로드·활용신청)은{' '}
+          <a href="https://www.data.go.kr" target="_blank" rel="noreferrer">공공데이터포털</a>에서
+          가능합니다.
         </p>
         <p>
-          {status && <>스냅샷 {status.data.currentSnapshot} · 목록 {status.data.counts.datasets.toLocaleString()}건 · </>}
-          <button className="footer-link" onClick={() => goto('changes')}>변경 이력</button> ·
-          이용 기록은 익명 수집되며 DNT/GPC로 거부할 수 있습니다.{' '}
-          <a href="/api/resources/privacy" target="_blank" rel="noreferrer">개인정보·로그 고지</a>
+          {/* IP·옵트아웃 상세는 링크된 개인정보·로그 안내가 정본 */}
+          <a href="https://github.com/hike-lab/public-data-lens" target="_blank" rel="noreferrer">GitHub</a> ·{' '}
+          <button className="footer-link" onClick={() => goto('changes')}>변경 이력</button> ·{' '}
+          <a href="/api/resources/privacy" target="_blank" rel="noreferrer">개인정보·로그 안내</a>
         </p>
       </footer>
     </div>

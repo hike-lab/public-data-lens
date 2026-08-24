@@ -78,6 +78,8 @@ export const api = {
   compare: (ids) => get('/compare', { ids: ids.join(',') }),
   changes: (params) => get('/changes', params),
   stats: (axis, limit) => get('/stats', { axis, limit }),
+  // 제한적 교차 집계(v1.8) — 허용 조합 밖은 서버가 FILTER_NOT_AVAILABLE로 답한다
+  statsBreakdown: (axis, breakdown, limit) => get('/stats', { axis, breakdown, limit }),
   // 판정 규칙 레지스트리 전문(§3.2) — /api/status에는 규칙 목록이 없어 이 라우트가 정본
   rules: () => get('/resources/rules'),
   // 검색 품질 지표(§3.2, v1.5) — humanReviewed 플래그를 함께 표기할 것

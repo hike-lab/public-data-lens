@@ -33,7 +33,14 @@ export async function stubApi(page) {
     if (p.startsWith('/api/datasets/')) return route.fulfill(json(fx('dataset-card.json')))
     if (p === '/api/compare') return route.fulfill(json(fx('compare.json')))
     if (p === '/api/changes') return route.fulfill(json(fx('changes.json')))
-    if (p === '/api/stats') return route.fulfill(json(fx('stats-theme.json')))
+    if (p === '/api/stats') {
+      const axis = url.searchParams.get('axis')
+      if (axis === 'listType') return route.fulfill(json(fx('stats-listType.json')))
+      if (axis === 'completeness') return route.fulfill(json(fx('stats-completeness.json')))
+      if (axis === 'family') return route.fulfill(json(fx('stats-family.json')))
+      if (axis === 'org') return route.fulfill(json(fx('stats-org-breakdown.json')))
+      return route.fulfill(json(fx('stats-theme.json')))
+    }
     if (p === '/api/concierge/status') return route.fulfill(json(fx('concierge-status.json')))
     if (p === '/api/concierge/stream') {
       return route.fulfill({ status: 200, contentType: 'text/event-stream', body: fx('concierge-stream.sse') })
