@@ -10,6 +10,22 @@ from .regions import match_regions
 
 EMPTY = ("", "-", "null", "없음")
 
+# rule: normalize-empty-v1.0 — 수식 오류 잔재는 '미기재'가 아니라 '파괴된 값'이다.
+# 2026-07 회차에서 '-'로 시작하는 셀을 엑셀이 수식으로 해석해 #NAME? 오류값이 되고,
+# 발행자의 1차 수정 과정에서 앞 3자가 절단돼 'ME?'가 됐다(75건, 6월 원문 11,769자 소실).
+# 판정은 '사용 불가'로 EMPTY와 같지만 원인이 다르므로 issue-detect가 별도 관찰한다.
+# 'ME?'는 실측된 절단 형태만 넣는다 — 다른 오프셋을 추측하지 않는다(원문 급감은 수용 게이트가 잡는다).
+FORMULA_ERRORS = frozenset({
+    "#NAME?", "#VALUE!", "#REF!", "#DIV/0!", "#N/A", "#NULL!", "#NUM!", "#SPILL!", "#CALC!",
+    "ME?",
+})
+
+# 수식 오류가 관측된 서술형 컬럼 — 원본 컬럼명 기준
+_TEXT_COLUMNS = (
+    "설명", "기타 유의사항", "데이터 한계", "보유근거", "수집방법",
+    "목록명", "공간범위", "시간범위", "비용부과기준 및 단위", "키워드",
+)
+
 CYCLE_MAP = {
     "수시": "IRREGULAR",
     "일간": "DAILY",
@@ -37,8 +53,20 @@ FEE_MAP = {"무료": "FREE", "유료": "PAID", "-": "UNSPECIFIED", "": "UNSPECIF
 
 _URL_RE = re.compile(r"^https?://", re.I)
 
+def is_formula_error(v: str | None) -> bool:
+    """엑셀 수식 오류 잔재 여부(rule: normalize-empty-v1.0)."""
+    return v is not None and v.strip() in FORMULA_ERRORS
+
+
 def is_empty(v: str | None) -> bool:
-    return v is None or v.strip() in EMPTY
+    """미기재이거나 사용 불가한 값(rule: normalize-empty-v1.0).
+
+    'ME?'를 데이터 설명으로 서빙하는 것보다 값 없음이 정직하다 — 원본은 source 뷰에 보존된다.
+    """
+    if v is None:
+        return True
+    stripped = v.strip()
+    return stripped in EMPTY or stripped in FORMULA_ERRORS
 
 
 # rule: normalize-date-v1.0 — 엑셀 일련번호 날짜 환산
@@ -188,6 +216,14 @@ def detect_issues(rec: dict, source: dict) -> list[dict]:
             "issue_type": "INVALID_URL_FORMAT",
             "confidence": 0.9,
         })
+    for col in _TEXT_COLUMNS:
+        if is_formula_error(source.get(col)):
+            issues.append({
+                "field": col,
+                "source_value": (source.get(col) or "").strip(),
+                "issue_type": "EXCEL_FORMULA_ERROR_ARTIFACT",
+                "confidence": 1.0,
+            })
     for col in _DATE_COLUMNS:
         raw = source.get(col, "")
         if raw and excel_serial_to_iso(raw) is not None:

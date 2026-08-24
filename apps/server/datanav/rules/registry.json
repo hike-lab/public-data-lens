@@ -27,10 +27,59 @@
       ]
     },
     {
+      "ruleId": "catalog-completeness-file-v1.1",
+      "title": "목록 메타데이터 완전성 (FILE 프로파일)",
+      "effectiveDate": "2026-08-24",
+      "supersedes": "catalog-completeness-file-v1.0",
+      "definition": "FILE 유형 목록 행의 catalogMetadataCompleteness. 평가 필드가 채워진 비율(미기재 판정은 normalize-empty-v1.0). AIRD 제2부 D1(데이터 내용 완전성)과 구분되는 목록 수준 지표. v1.0에서 변경: 미기재 판정을 normalize-empty-v1.0으로 위임 — 엑셀 수식 오류 잔재를 기재됨으로 세지 않는다(2026-07 회차 41건: 설명 33·데이터 한계 8).",
+      "fields": [
+        "title",
+        "theme",
+        "org_name",
+        "update_cycle",
+        "keywords",
+        "description",
+        "license",
+        "created_date",
+        "modified_date",
+        "list_url",
+        "spatial",
+        "temporal",
+        "data_limits",
+        "format",
+        "row_count",
+        "file_data_name"
+      ]
+    },
+    {
       "ruleId": "catalog-completeness-api-v1.0",
       "title": "목록 메타데이터 완전성 (API 프로파일)",
       "effectiveDate": "2026-07-17",
       "definition": "API 유형 목록 행의 catalogMetadataCompleteness. 파일 전용 필드(전체행·파일데이터명 등)를 감점하지 않는다(설계서 §3.2).",
+      "fields": [
+        "title",
+        "theme",
+        "org_name",
+        "update_cycle",
+        "keywords",
+        "description",
+        "license",
+        "created_date",
+        "modified_date",
+        "list_url",
+        "spatial",
+        "temporal",
+        "data_limits",
+        "api_type",
+        "traffic"
+      ]
+    },
+    {
+      "ruleId": "catalog-completeness-api-v1.1",
+      "title": "목록 메타데이터 완전성 (API 프로파일)",
+      "effectiveDate": "2026-08-24",
+      "supersedes": "catalog-completeness-api-v1.0",
+      "definition": "API 유형 목록 행의 catalogMetadataCompleteness. 파일 전용 필드(전체행·파일데이터명 등)를 감점하지 않는다(설계서 §3.2). v1.0에서 변경: 미기재 판정을 normalize-empty-v1.0으로 위임 — 엑셀 수식 오류 잔재를 기재됨으로 세지 않는다(2026-07 회차 41건: 설명 33·데이터 한계 8).",
       "fields": [
         "title",
         "theme",
@@ -68,6 +117,33 @@
         "temporal",
         "format"
       ]
+    },
+    {
+      "ruleId": "catalog-completeness-std-v1.1",
+      "title": "목록 메타데이터 완전성 (STD 프로파일)",
+      "effectiveDate": "2026-08-24",
+      "supersedes": "catalog-completeness-std-v1.0",
+      "definition": "표준데이터셋(STD) 목록 행의 catalogMetadataCompleteness. v1.0에서 변경: 미기재 판정을 normalize-empty-v1.0으로 위임 — 엑셀 수식 오류 잔재를 기재됨으로 세지 않는다(2026-07 회차 41건: 설명 33·데이터 한계 8).",
+      "fields": [
+        "title",
+        "theme",
+        "org_name",
+        "update_cycle",
+        "keywords",
+        "description",
+        "created_date",
+        "modified_date",
+        "list_url",
+        "spatial",
+        "temporal",
+        "format"
+      ]
+    },
+    {
+      "ruleId": "normalize-empty-v1.0",
+      "title": "값 없음 판정",
+      "effectiveDate": "2026-08-24",
+      "definition": "서술형·식별형 컬럼의 '값 없음' 판정. 다음을 사용 불가로 본다: 빈 문자열, '-', 'null', '없음', 그리고 엑셀 수식 오류 잔재(#NAME? #VALUE! #REF! #DIV/0! #N/A #NULL! #NUM! #SPILL! #CALC!, 및 실측된 절단 형태 'ME?'). 미기재와 파괴된 값은 판정이 같으나 원인이 다르므로 후자는 issue-detect가 EXCEL_FORMULA_ERROR_ARTIFACT로 별도 관찰한다. 원본값은 source 뷰에 보존된다. 근거: 2026-07 회차에서 '-'로 시작하는 셀을 엑셀이 수식으로 해석해 #NAME?가 되고, 발행자의 1차 수정에서 앞 3자가 절단돼 'ME?'가 됐다(5개 컬럼 75건, 2026-06 원문 11,769자 소실). 'ME?'를 데이터 설명으로 서빙하는 것보다 값 없음이 정직하다."
     },
     {
       "ruleId": "normalize-format-v1.0",
@@ -135,6 +211,13 @@
       "title": "메타데이터 이슈 자동 탐지",
       "effectiveDate": "2026-07-17",
       "definition": "탐지 유형: DUPLICATE_LIST_KEY, LEADING_QUOTE_ARTIFACT(백틱 등 표기 잔재), INVALID_URL_FORMAT, NEGATIVE_OR_NONNUMERIC_COUNT. 관찰 객체는 DQV QualityAnnotation 계열로 원본과 분리 저장, 상태 흐름 SUGGESTED→검토→수용/기각→해결. 동일 유형·필드가 전체 행의 50%를 초과해 나타나는 계통적 패턴은 행별 관찰 대신 카탈로그 수준 관찰 1건(record_id='@catalog', 발생 수 기재)으로 축약한다."
+    },
+    {
+      "ruleId": "issue-detect-v1.1",
+      "title": "메타데이터 이슈 자동 탐지",
+      "effectiveDate": "2026-08-24",
+      "supersedes": "issue-detect-v1.0",
+      "definition": "탐지 유형: DUPLICATE_LIST_KEY, LEADING_QUOTE_ARTIFACT(백틱 등 표기 잔재), INVALID_URL_FORMAT, NEGATIVE_OR_NONNUMERIC_COUNT, EXCEL_SERIAL_DATE_ARTIFACT(엑셀 일련번호 날짜를 환산함), UNPARSEABLE_DATE_FORMAT(ISO도 일련번호도 아닌 날짜 — 원본값 유지), EXCEL_FORMULA_ERROR_ARTIFACT(수식 오류 잔재 — normalize-empty-v1.0이 값 없음으로 판정). 관찰 객체는 DQV QualityAnnotation 계열로 원본과 분리 저장, 상태 흐름 SUGGESTED→검토→수용/기각→해결. 동일 유형·필드가 전체 행의 50%를 초과해 나타나는 계통적 패턴은 행별 관찰 대신 카탈로그 수준 관찰 1건(record_id='@catalog', 발생 수 기재)으로 축약한다. v1.0에서 변경: 날짜·수식 오류 3유형 추가(2026-07 회차의 엑셀 왕복 흔적)."
     },
     {
       "ruleId": "freshness-v1.0",

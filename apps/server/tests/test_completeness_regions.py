@@ -8,7 +8,7 @@ def test_file_profile_selected():
     rec = normalize_row(SAMPLE, 2)
     c = compute_completeness(rec)
     assert c["profile"] == "FILE"
-    assert c["rule"] == "catalog-completeness-file-v1.0"
+    assert c["rule"] == "catalog-completeness-file-v1.1"
     assert 0 <= c["score"] <= 1
 
 

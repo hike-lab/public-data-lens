@@ -24,7 +24,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from datanav.pipeline.completeness import compute_completeness  # noqa: E402
 from datanav.pipeline.diff import _TRACKED, _compare_value  # noqa: E402
-from datanav.pipeline.normalize import detect_issues, is_empty, normalize_row  # noqa: E402
+from datanav.pipeline.normalize import (  # noqa: E402
+    FORMULA_ERRORS,
+    detect_issues,
+    is_empty,
+    normalize_row,
+)
 from datanav.pipeline.parse import (  # noqa: E402
     COLUMN_MAP,
     ParseError,
@@ -44,6 +49,14 @@ ENUM_COLUMNS = (
 )
 FILL_DROP_BLOCK_PP = 5.0   # 채움률 변동 차단 임계(퍼센트포인트)
 FILL_DROP_WARN_PP = 1.0
+# 원문 급감 판정 — 이전 회차 대비 이 비율 이하로 줄고 절대 감소폭도 큰 셀
+COLLAPSE_RATIO = 0.2
+COLLAPSE_MIN_LOST_CHARS = 30
+# 서술형 컬럼 — 원문 급감·수식 오류를 이 컬럼들에서 본다
+TEXT_COLUMNS = (
+    "설명", "기타 유의사항", "데이터 한계", "보유근거", "수집방법",
+    "목록명", "공간범위", "시간범위", "비용부과기준 및 단위", "키워드",
+)
 
 _ANSI = {"BLOCK": "\033[31m", "WARN": "\033[33m", "PASS": "\033[32m", None: "\033[0m"}
 
@@ -131,6 +144,27 @@ def check_dates(rows: list[dict], rep: Report) -> None:
         kind = "엑셀 일련번호" if len(serial) > len(bad) // 2 else "형식 불명"
         rep.add("BLOCK", f"날짜 형식 · {col}",
                 f"{len(bad):,}건 위반 ({kind}) — 유형별 {dict(by_type)}, 예: {bad[:3]}")
+
+
+def check_formula_errors(rows: list[dict], rep: Report) -> None:
+    """엑셀 수식 오류 잔재 — 셀이 비지 않으므로 채움률·값 회귀 검사에 걸리지 않는다.
+    2026-07 회차에서 '-'로 시작하는 셀이 #NAME?가 되고 수정 과정에서 'ME?'로 절단됐다."""
+    hits = Counter()
+    for r in rows:
+        for col in TEXT_COLUMNS:
+            v = g(r, col)
+            if v and v in FORMULA_ERRORS:
+                hits[(col, v)] += 1
+    if not hits:
+        rep.add("PASS", "수식 오류 잔재", "0건")
+        return
+    total = sum(hits.values())
+    detail = ", ".join(f"{c} {v!r} {n}" for (c, v), n in hits.most_common(6))
+    # 차단하지 않는다 — normalize-empty-v1.0이 값 없음으로 판정하고 issue-detect가 관찰한다.
+    # 다만 원문은 소실됐으므로 발행자에게 복원을 요청해야 한다.
+    rep.add("WARN", "수식 오류 잔재",
+            f"{total:,}건 — 원문이 파괴된 셀. 적재는 값 없음으로 처리되고 "
+            f"EXCEL_FORMULA_ERROR_ARTIFACT로 관찰된다. 발행자에게 원문 복원 요청 대상: {detail}")
 
 
 def check_contract(rows: list[dict], rep: Report) -> dict:
@@ -232,6 +266,37 @@ def check_value_regression(cur: dict, prv: dict, rep: Report) -> None:
         rep.add("PASS", "값 회귀", "없음")
 
 
+def check_text_collapse(cur: dict, prv: dict, rep: Report) -> None:
+    """값이 남아 있는데 원문이 급격히 짧아진 셀 — 미확인 손상 형태를 발견하는 그물.
+
+    빈값이 된 셀은 제외한다(값 회귀 검사가 담당). 알려진 손상(수식 오류)은 별도 검사가
+    보고하므로 여기 남는 것은 '설명이 재작성된 정상 갱신'과 '아직 모르는 손상 형태'의
+    혼합이다. 따라서 차단하지 않고 사람이 표본을 보게 한다.
+    """
+    shared = cur.keys() & prv.keys()
+    hits: dict[str, list] = defaultdict(list)
+    for k in shared:
+        for col in TEXT_COLUMNS:
+            new, old = g(cur[k], col), g(prv[k], col)
+            if not new or not old:
+                continue  # 빈값 → 값 회귀 검사 담당
+            if new in FORMULA_ERRORS:
+                continue  # 알려진 손상 → 수식 오류 검사 담당
+            a, b = len(new), len(old)
+            if (b - a) >= COLLAPSE_MIN_LOST_CHARS and a <= b * COLLAPSE_RATIO:
+                hits[col].append((k, b, a))
+    if not hits:
+        rep.add("PASS", "원문 급감", "없음(빈값·수식오류 제외)")
+        return
+    total = sum(len(v) for v in hits.values())
+    lost = sum(b - a for v in hits.values() for _, b, a in v)
+    worst = max((v for vs in hits.values() for v in vs), key=lambda x: x[1] - x[2])
+    rep.add("WARN", "원문 급감",
+            f"{total:,}건, 총 {lost:,}자 — 컬럼별 "
+            + ", ".join(f"{c} {len(v)}" for c, v in sorted(hits.items(), key=lambda x: -len(x[1])))
+            + f" | 최다 {worst[0]} {worst[1]}자→{worst[2]}자. 정상 재작성과 미확인 손상이 섞인다 — 표본 확인 권장")
+
+
 def predict_diff(cur: dict, prv: dict, rep: Report) -> dict:
     """diff-v1.1 비교 규칙으로 상태 분포를 미리 계산한다 — 빌드 결과와 대조할 기대치."""
     def norm(rows: dict) -> dict:
@@ -282,6 +347,7 @@ def main() -> int:
         return 1
     cur = check_structure(rows, enc, rep)
     check_dates(rows, rep)
+    check_formula_errors(rows, rep)
     summary = {"file": new_path.name, "rows": len(rows), "encoding": enc}
     summary.update(check_contract(rows, rep))
 
@@ -296,6 +362,7 @@ def main() -> int:
         check_fill_rates(cur, prv, rep)
         check_vocabularies(cur, prv, rep)
         check_value_regression(cur, prv, rep)
+        check_text_collapse(cur, prv, rep)
         summary["diff"] = predict_diff(cur, prv, rep)
 
     print()
