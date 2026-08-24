@@ -11,8 +11,8 @@ type: software
 authors:
   - name: "중앙대학교 HIKE 연구실"
 license: MIT
-version: 1.1.0-beta
-date-released: "2026-08-03"
+version: 1.2.0-beta
+date-released: "2026-08-24"
 repository-code: "https://github.com/hike-lab/public-data-lens"
 keywords:
   - open-data
