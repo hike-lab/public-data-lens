@@ -452,6 +452,90 @@ def canon_bulk(snapshot: str, filename: str):
     return FileResponse(p, media_type=media, filename=p.name)
 
 
+# ---- /llms.txt — 웹 표면의 기계 판독 진입점(ADR-012). 정적 파일이 아니라 서버가
+# 현재 배포 상태(/api/status와 동일 원천)에서 생성한다 — 스냅샷·커버리지 수치가
+# 배포와 함께 갱신되어 문서가 낡지 않는다. 라이브 라우팅에서 프리픽스 이하 미지 경로는
+# 전부 API로 오므로(catch-all) 정본 위치도 서버 라우트가 맞다.
+_GITHUB_URL = "https://github.com/hike-lab/public-data-lens"
+
+
+def _llms_txt_body() -> str:
+    from ..config import BASE_URI, DISCLAIMER, SCHEMA_VERSION
+
+    d = _svc().get_status()["data"]
+    b = BASE_URI
+
+    state = [f"- 현재 스냅샷: {d['currentSnapshot']} (월간 갱신)"]
+    if d.get("snapshotLagDays") is not None:
+        state.append(f"- 스냅샷 지연: {d['snapshotLagDays']}일 — 이 지연 안의 변경은 아직 반영 전이다")
+    state.append(f"- 목록 데이터셋: {d['counts']['datasets']:,}건")
+    sc = d.get("structureCoverage")
+    if sc and sc.get("fileRecordsTotal"):
+        pct = sc["recordsAvailable"] / sc["fileRecordsTotal"] * 100
+        state.append(
+            f"- 실파일 구조 관측: 파일형 {sc['fileRecordsTotal']:,}건 중 "
+            f"{sc['recordsAvailable']:,}건({pct:.1f}%) — 나머지는 미수집이며, 미수집은 품질 문제가 아니다"
+        )
+    state.append(f"- 계약 버전(schemaVersion): {SCHEMA_VERSION}")
+
+    return "\n".join([
+        "# 공공데이터 렌즈 (Public Data Lens)",
+        "",
+        "> 공공데이터포털(data.go.kr)의 월간 목록 메타데이터를 정본 JSON-LD로 정규화하고,",
+        "> 버전 관리되는 판정 규칙으로 무엇이 존재하고 무엇이 실제로 관측되었는지를",
+        "> 근거 수준과 함께 제시하는 탐색·판단 계층이다. 중앙대학교 HIKE 연구실이 운영하는",
+        "> AIRD(AI-Ready Data) 표준안 실증 프로젝트이며, 같은 능력을 MCP(Model Context",
+        "> Protocol)로 AI 어시스턴트 안에서 쓸 수 있다.",
+        "",
+        "이 문서는 서버가 현재 배포 상태에서 생성한다 — 아래 수치는 조회 시점 값이다.",
+        "",
+        "## 현재 상태",
+        "",
+        *state,
+        "",
+        "## 판단 시 주의 — 계약 의미",
+        "",
+        f"- {DISCLAIMER}",
+        "- 원문(실데이터) 접근은 전부 공공데이터포털로 연결한다 — 이 서비스는 재배포하지 않는다.",
+        "- 근거 수준은 2종이다: CATALOG_METADATA_ONLY(목록 기재)와 FILE_OBSERVATION(실파일 관측).",
+        "  목록 기재는 관측이 아니다.",
+        "- 검색 결과 없음은 데이터 부재가 아니다. search_by_columns 무결과는 컬럼 부재가 아니다",
+        "  (구조 미수집일 수 있다 — 커버리지 분모는 /api/status 참조).",
+        "- NOT_COLLECTED / QUEUED / COLLECTING은 수집 상태다 — 품질 문제가 아니다.",
+        "- MISSING_FROM_SNAPSHOT은 관찰 사실이다 — 폐기 확정이 아니다(폐기는 OFFICIALLY_WITHDRAWN만).",
+        "- INFERRED_*(지역)는 추론 표시이지 오류가 아니며, UNKNOWN(freshness)은 판단 불가이지 나쁨이 아니다.",
+        "- 검색 점수(BM25)는 순위용 상대값이다 — 절대 크기·부호로 품질을 해석하지 않는다.",
+        "",
+        "## MCP 연결",
+        "",
+        f"- [MCP 커넥터 URL]({b}/mcp): 원격 MCP(streamable HTTP). 인증 없음, 읽기 전용·멱등.",
+        f"- [Tool 스키마 명세(JSON)]({b}/spec/tools/1.0): search_datasets, get_dataset,",
+        "  search_by_columns, get_dataset_structure, compare_datasets, get_catalog_changes,",
+        "  get_catalog_stats, build_data_plan, get_context",
+        "",
+        "## 정본 URI (Cool URIs — 영구 불변 네임스페이스)",
+        "",
+        f"- [현재 카탈로그(JSON-LD)]({b}/catalog/current)",
+        f"- 데이터셋 정본: `{b}/dataset/{{목록키}}` (기본 JSON-LD, 브라우저는 포털로 303)",
+        f"- [JSON-LD 컨텍스트]({b}/context/catalog/1.0)",
+        f"- [판정 규칙 레지스트리]({b}/rules/catalog/1.0)",
+        f"- [SHACL 셰이프]({b}/shapes/catalog/1.0)",
+        "",
+        "## API·문서",
+        "",
+        f"- [카탈로그 현황(JSON)]({b}/api/status): 스냅샷·건수·구조 커버리지 실시간 값",
+        f"- [개인정보·로그 고지]({b}/api/resources/privacy)",
+        f"- [GitHub 저장소]({_GITHUB_URL}): 설계서·부속명세·판정 규칙·ADR 전체 공개",
+        "",
+    ])
+
+
+@app.get("/llms.txt", response_class=PlainTextResponse)
+@app.get(_CANON + "/llms.txt", response_class=PlainTextResponse)
+def llms_txt():
+    return PlainTextResponse(_llms_txt_body(), media_type="text/markdown; charset=utf-8")
+
+
 # ---- M3 생성형 컨시어지(§9 3층) — 별도 서비스(B 스택) 표면. 모듈이 있을 때만 라우트가
 # 등록되며, 공개 스냅샷(concierge*.py 미포함)에서는 import 실패로 자동 비활성된다.
 # A 배포는 모듈이 있어도 DATANAV_CONCIERGE_ENABLED=0으로 표면을 끈다(게이트웨이 404와 이중 방어).
