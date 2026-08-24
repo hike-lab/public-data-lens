@@ -2,7 +2,7 @@
 
 > **하고 싶은 일을 말하면, 활용할 공공데이터와 선택 근거를 찾아주는 AI 탐색·판단 계층**
 
-![snapshot](https://img.shields.io/badge/스냅샷-2026--06-blue)
+![snapshot](https://img.shields.io/badge/스냅샷-2026--07-blue)
 ![contract](https://img.shields.io/badge/MCP%20계약-v1.0.0%20동결%20%2B%20v1.8.0%20additive-success)
 ![status](https://img.shields.io/badge/서비스-v1.1%20beta-orange)
 ![license](https://img.shields.io/badge/license-MIT-green)
@@ -55,9 +55,7 @@ ChatGPT 개발자 모드에서도 같은 주소를 `No Authentication`으로 등
 * “고령자 의료 접근성 분석에 필요한 데이터 후보를 비교해줘.”
 * “위도와 경도 컬럼이 있는 전기차 충전소 데이터를 찾아줘.”
 * “이 데이터셋의 실제 파일에는 어떤 컬럼이 있는지 보여줘.”
-* “지난달 공공데이터 목록에서 사라진 데이터가 있어?” — 변경 추적은 월간 스냅샷이
-  2개 이상 축적된 뒤부터 결과가 나옵니다(현재 첫 스냅샷 축적 단계 — 응답이
-  `baseSnapshot: null`과 함께 그 사실을 알려줍니다).
+* “지난달 공공데이터 목록에서 사라진 데이터가 있어?”
 * “이 목적에 필요한 데이터와 예상 결합 항목을 계획으로 만들어줘.”
 
 목적만 말해도 됩니다. `build_data_plan`이 필요한 데이터 역할을 나누고 후보·선정 근거·예상 결합 항목·확인할 한계를 **활용 계획 초안**으로 반환합니다. 생성형 AI를 쓰지 않는 결정론적 Tool이며 결과는 항상 `DRAFT`입니다.

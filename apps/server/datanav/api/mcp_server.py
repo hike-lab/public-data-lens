@@ -398,7 +398,11 @@ class Utf8GuardMiddleware:
     전송 계층(MCP SDK)은 디코딩 실패 시 generic -32603("Error handling POST request")만
     반환해 클라이언트가 인코딩 문제임을 알 수 없다. 본문을 버퍼링해 UTF-8을 선검증하고,
     실패 시 JSON-RPC 표준 파스 에러(-32700)에 원인을 명시한다. 계약(tool schema) 무관.
+
+    BaseHTTPMiddleware를 쓰지 않는다 — SSE·스트리밍 응답을 깨뜨린다.
     """
+
+    MAX_BODY_PEEK = 1 << 20  # 판정을 위해 버퍼링하므로 상한을 둔다(MCP 본문은 작다)
 
     def __init__(self, app):
         self.app = app
@@ -406,41 +410,57 @@ class Utf8GuardMiddleware:
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http" or scope.get("method") != "POST":
             return await self.app(scope, receive, send)
-        chunks = []
+        buffered: list[dict] = []
+        size = 0
         while True:
             msg = await receive()
+            buffered.append(msg)
             if msg["type"] != "http.request":
-                return  # 본문 수신 전 연결 종료
-            chunks.append(msg.get("body", b""))
-            if not msg.get("more_body"):
+                break  # http.disconnect 등 — 판정하지 않고 하위 앱에 그대로 넘긴다
+            size += len(msg.get("body", b""))
+            if not msg.get("more_body") or size > self.MAX_BODY_PEEK:
                 break
-        body = b"".join(chunks)
+        body = b"".join(
+            m.get("body", b"") for m in buffered if m["type"] == "http.request"
+        )
         try:
             body.decode("utf-8")
-        except UnicodeDecodeError:
+        except UnicodeDecodeError as exc:
+            # 계약 오류 모델(§4.3)의 INVALID_ARGUMENT를 data에 병기해 REST 표면과 코드를
+            # 맞춘다. 실패 바이트 위치·사유를 담아 CP949 등 원인을 바로 식별하게 한다
+            # (실사용 보고: 한글 쿼리만 실패하는 것으로 오인해 디버깅에 시간을 썼다).
             payload = json.dumps({
                 "jsonrpc": "2.0", "id": None,
                 "error": {
                     "code": -32700,
                     "message": "Parse error: 요청 본문이 UTF-8이 아닙니다 — "
                                "JSON-RPC 본문은 UTF-8로 인코딩해 주세요. "
+                               f"{exc.start}바이트 위치에서 디코딩 실패({exc.reason}). "
                                "(request body is not valid UTF-8)",
+                    "data": {
+                        "code": "INVALID_ARGUMENT",
+                        "details": {
+                            "expectedEncoding": "utf-8",
+                            "failedAtByte": exc.start,
+                            "reason": exc.reason,
+                        },
+                    },
                 },
-            }).encode("utf-8")
+            }, ensure_ascii=False).encode("utf-8")
             await send({"type": "http.response.start", "status": 400,
                         "headers": [(b"content-type", b"application/json; charset=utf-8"),
                                     (b"content-length", str(len(payload)).encode())]})
             await send({"type": "http.response.body", "body": payload})
             return
 
-        replayed = False
+        pending = iter(buffered)
 
         async def replay():
-            nonlocal replayed
-            if not replayed:
-                replayed = True
-                return {"type": "http.request", "body": body, "more_body": False}
-            return await receive()
+            """버퍼링한 메시지를 먼저 돌려주고, 소진되면 원래 receive로 넘어간다."""
+            try:
+                return next(pending)
+            except StopIteration:
+                return await receive()
 
         await self.app(scope, replay, send)
 
@@ -470,6 +490,7 @@ def main() -> None:
                     log_level=mcp.settings.log_level.lower())
         return
     mcp.run(transport=transport)  # type: ignore[arg-type]
+
 
 
 if __name__ == "__main__":

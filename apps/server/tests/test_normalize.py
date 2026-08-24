@@ -1,5 +1,7 @@
 from datanav.pipeline.normalize import (
     detect_issues,
+    excel_serial_to_iso,
+    normalize_date,
     normalize_formats,
     normalize_keywords,
     normalize_row,
@@ -96,3 +98,105 @@ def test_issue_nonnumeric_count():
     assert rec["row_count"] is None
     types = {i["issue_type"] for i in detect_issues(rec, bad)}
     assert "NEGATIVE_OR_NONNUMERIC_COUNT" in types
+
+
+# ------------------------------------------------- normalize-date-v1.0
+
+def test_iso_date_passes_through():
+    assert normalize_date("2012-12-06") == "2012-12-06"
+
+
+def test_excel_serial_is_converted():
+    """2026-07 스냅샷 실측: 41249 → 2012-12-06 (2026-06 스냅샷 대조 전건 일치)."""
+    assert excel_serial_to_iso("41249") == "2012-12-06"
+    assert excel_serial_to_iso("44834") == "2022-09-30"
+    assert excel_serial_to_iso("45912") == "2025-09-12"
+    assert normalize_date("41249") == "2012-12-06"
+
+
+def test_year_like_value_is_not_treated_as_serial():
+    """연도 4자리를 일련번호로 오인하지 않는다."""
+    assert excel_serial_to_iso("2026") is None
+    assert normalize_date("2026") == "2026"
+
+
+def test_out_of_range_serial_is_left_alone():
+    assert excel_serial_to_iso("12345") is None
+    assert excel_serial_to_iso("99999") is None
+
+
+def test_unrecognized_date_keeps_source_value():
+    """해석 불가 값을 버리지 않는다 — 원본값 추적(§8)."""
+    assert normalize_date("2026.07.31") == "2026.07.31"
+    assert normalize_date("-") is None
+
+
+def test_serial_date_is_observed_not_silently_fixed():
+    src = dict(SAMPLE, 등록일="41249", 수정일="44834")
+    rec = normalize_row(src, 2)
+    assert rec["created_date"] == "2012-12-06"
+    assert rec["modified_date"] == "2022-09-30"
+    types = {(i["field"], i["issue_type"]) for i in detect_issues(rec, src)}
+    assert ("등록일", "EXCEL_SERIAL_DATE_ARTIFACT") in types
+    assert ("수정일", "EXCEL_SERIAL_DATE_ARTIFACT") in types
+
+
+def test_clean_iso_dates_produce_no_date_issue():
+    rec = normalize_row(SAMPLE, 2)
+    date_issues = [
+        i for i in detect_issues(rec, SAMPLE)
+        if i["issue_type"] in ("EXCEL_SERIAL_DATE_ARTIFACT", "UNPARSEABLE_DATE_FORMAT")
+    ]
+    assert date_issues == []
+
+
+def test_unparseable_date_is_observed():
+    src = dict(SAMPLE, 수정일="2026.07.31")
+    rec = normalize_row(src, 2)
+    types = {(i["field"], i["issue_type"]) for i in detect_issues(rec, src)}
+    assert ("수정일", "UNPARSEABLE_DATE_FORMAT") in types
+
+
+# ------------------------------------------------- normalize-empty-v1.0
+
+def test_formula_error_is_treated_as_no_value():
+    """'ME?'를 데이터 설명으로 서빙하는 것보다 값 없음이 정직하다."""
+    from datanav.pipeline.normalize import is_empty, is_formula_error
+    for v in ("ME?", "#NAME?", "#VALUE!", "#REF!", "#N/A"):
+        assert is_formula_error(v), v
+        assert is_empty(v), v
+    assert not is_formula_error("정상 설명")
+    assert not is_empty("정상 설명")
+
+
+def test_formula_error_lookalike_is_not_swallowed():
+    """전체 셀 정확 일치만 판정한다 — 정상 본문을 삼키지 않는다."""
+    from datanav.pipeline.normalize import is_empty
+    assert not is_empty("ME? 라는 약어를 설명하는 데이터")
+    assert not is_empty("#NAME? 오류의 원인과 해결 방법")
+
+
+def test_formula_error_nulls_field_and_is_observed():
+    """2026-07 회차 실측 형태 — 설명·기타 유의사항이 'ME?'로 파괴된 경우."""
+    src = dict(SAMPLE, 설명="ME?", **{"기타 유의사항": "#NAME?"})
+    rec = normalize_row(src, 2)
+    assert rec["description"] is None
+    assert rec["notes"] is None
+    types = {(i["field"], i["issue_type"]) for i in detect_issues(rec, src)}
+    assert ("설명", "EXCEL_FORMULA_ERROR_ARTIFACT") in types
+    assert ("기타 유의사항", "EXCEL_FORMULA_ERROR_ARTIFACT") in types
+
+
+def test_formula_error_lowers_completeness_not_silently():
+    """완전성이 내려가되(catalog-completeness-*-v1.1) 원인이 관측으로 남는다."""
+    from datanav.pipeline.completeness import compute_completeness
+    clean = compute_completeness(normalize_row(SAMPLE, 2))
+    broken = compute_completeness(normalize_row(dict(SAMPLE, 설명="ME?"), 2))
+    assert broken["score"] < clean["score"]
+    assert broken["rule"] == "catalog-completeness-file-v1.1"
+
+
+def test_clean_row_produces_no_formula_issue():
+    rec = normalize_row(SAMPLE, 2)
+    assert not [i for i in detect_issues(rec, SAMPLE)
+                if i["issue_type"] == "EXCEL_FORMULA_ERROR_ARTIFACT"]

@@ -1,6 +1,7 @@
 """정규화(매핑표 2단계) — 포맷·주기·라이선스·수치·키워드. 원본은 source에 보존."""
 from __future__ import annotations
 
+import datetime as dt
 import json
 import re
 
@@ -8,6 +9,22 @@ from .parse import COLUMN_MAP
 from .regions import match_regions
 
 EMPTY = ("", "-", "null", "없음")
+
+# rule: normalize-empty-v1.0 — 수식 오류 잔재는 '미기재'가 아니라 '파괴된 값'이다.
+# 2026-07 회차에서 '-'로 시작하는 셀을 엑셀이 수식으로 해석해 #NAME? 오류값이 되고,
+# 발행자의 1차 수정 과정에서 앞 3자가 절단돼 'ME?'가 됐다(75건, 6월 원문 11,769자 소실).
+# 판정은 '사용 불가'로 EMPTY와 같지만 원인이 다르므로 issue-detect가 별도 관찰한다.
+# 'ME?'는 실측된 절단 형태만 넣는다 — 다른 오프셋을 추측하지 않는다(원문 급감은 수용 게이트가 잡는다).
+FORMULA_ERRORS = frozenset({
+    "#NAME?", "#VALUE!", "#REF!", "#DIV/0!", "#N/A", "#NULL!", "#NUM!", "#SPILL!", "#CALC!",
+    "ME?",
+})
+
+# 수식 오류가 관측된 서술형 컬럼 — 원본 컬럼명 기준
+_TEXT_COLUMNS = (
+    "설명", "기타 유의사항", "데이터 한계", "보유근거", "수집방법",
+    "목록명", "공간범위", "시간범위", "비용부과기준 및 단위", "키워드",
+)
 
 CYCLE_MAP = {
     "수시": "IRREGULAR",
@@ -36,9 +53,54 @@ FEE_MAP = {"무료": "FREE", "유료": "PAID", "-": "UNSPECIFIED", "": "UNSPECIF
 
 _URL_RE = re.compile(r"^https?://", re.I)
 
+def is_formula_error(v: str | None) -> bool:
+    """엑셀 수식 오류 잔재 여부(rule: normalize-empty-v1.0)."""
+    return v is not None and v.strip() in FORMULA_ERRORS
+
 
 def is_empty(v: str | None) -> bool:
-    return v is None or v.strip() in EMPTY
+    """미기재이거나 사용 불가한 값(rule: normalize-empty-v1.0).
+
+    'ME?'를 데이터 설명으로 서빙하는 것보다 값 없음이 정직하다 — 원본은 source 뷰에 보존된다.
+    """
+    if v is None:
+        return True
+    stripped = v.strip()
+    return stripped in EMPTY or stripped in FORMULA_ERRORS
+
+
+# rule: normalize-date-v1.0 — 엑셀 일련번호 날짜 환산
+# 발행자 내보내기 경로에 따라 날짜 컬럼이 엑셀 내부 일련번호로 내려오는 회차가 있다
+# (2026-07 스냅샷의 API 블록 11,960행). 기준 원점은 엑셀 1900 날짜 체계의 1899-12-30.
+# 범위 하한을 두어 연도 4자리("2026" 등)를 일련번호로 오인하지 않는다.
+_EXCEL_EPOCH = dt.date(1899, 12, 30)
+_SERIAL_RE = re.compile(r"^\d{5}$")
+_SERIAL_MIN, _SERIAL_MAX = 30000, 60000  # 1982-03-12 ~ 2064-04-05
+_ISO_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+_DATE_COLUMNS = ("등록일", "수정일", "차기 등록 예정일")
+
+
+def excel_serial_to_iso(raw: str) -> str | None:
+    """엑셀 일련번호 문자열 → ISO 날짜. 일련번호로 판정되지 않으면 None."""
+    v = raw.strip()
+    if not _SERIAL_RE.match(v):
+        return None
+    n = int(v)
+    if not _SERIAL_MIN <= n <= _SERIAL_MAX:
+        return None
+    return (_EXCEL_EPOCH + dt.timedelta(days=n)).isoformat()
+
+
+def normalize_date(raw: str | None) -> str | None:
+    """ISO 날짜는 그대로, 엑셀 일련번호는 환산, 그 외 원본값 유지(§8 원본값 추적).
+    변환 사실은 detect_issues가 EXCEL_SERIAL_DATE_ARTIFACT로 별도 관찰한다."""
+    if is_empty(raw):
+        return None
+    v = raw.strip()
+    if _ISO_DATE_RE.match(v):
+        return v
+    return excel_serial_to_iso(v) or v
 
 
 def _to_int(v: str | None) -> int | None:
@@ -100,15 +162,15 @@ def normalize_row(source: dict, row_no: int) -> dict:
         "collection_method": None if is_empty(s["collection_method"]) else s["collection_method"].strip(),
         "update_cycle_raw": s["update_cycle_raw"].strip() or None,
         "update_cycle": CYCLE_MAP.get(s["update_cycle_raw"].strip(), "OTHER"),
-        "next_registration_date": None if is_empty(s["next_registration_date"]) else s["next_registration_date"].strip(),
+        "next_registration_date": normalize_date(s["next_registration_date"]),
         "media_type": None if is_empty(s["media_type"]) else s["media_type"].strip(),
         "row_count": _to_int(s["row_count_raw"]),
         "format_raw": s["format_raw"].strip() or None,
         "formats": normalize_formats(s["format_raw"]),
         "keywords": normalize_keywords(s["keywords_raw"]),
         "download_count": _to_int(s["download_count_raw"]),
-        "created_date": None if is_empty(s["created_date"]) else s["created_date"].strip(),
-        "modified_date": None if is_empty(s["modified_date"]) else s["modified_date"].strip(),
+        "created_date": normalize_date(s["created_date"]),
+        "modified_date": normalize_date(s["modified_date"]),
         "data_limits": None if is_empty(s["data_limits"]) else s["data_limits"].strip(),
         "provision_type": None if is_empty(s["provision_type"]) else s["provision_type"].strip(),
         "description": None if is_empty(s["description"]) else s["description"].strip(),
@@ -154,6 +216,30 @@ def detect_issues(rec: dict, source: dict) -> list[dict]:
             "issue_type": "INVALID_URL_FORMAT",
             "confidence": 0.9,
         })
+    for col in _TEXT_COLUMNS:
+        if is_formula_error(source.get(col)):
+            issues.append({
+                "field": col,
+                "source_value": (source.get(col) or "").strip(),
+                "issue_type": "EXCEL_FORMULA_ERROR_ARTIFACT",
+                "confidence": 1.0,
+            })
+    for col in _DATE_COLUMNS:
+        raw = source.get(col, "")
+        if raw and excel_serial_to_iso(raw) is not None:
+            issues.append({
+                "field": col,
+                "source_value": raw,
+                "issue_type": "EXCEL_SERIAL_DATE_ARTIFACT",
+                "confidence": 1.0,
+            })
+        elif not is_empty(raw) and not _ISO_DATE_RE.match(raw.strip()):
+            issues.append({
+                "field": col,
+                "source_value": raw,
+                "issue_type": "UNPARSEABLE_DATE_FORMAT",
+                "confidence": 0.9,
+            })
     for col, field in (("전체행", "row_count"), ("다운로드_활용신청건수", "download_count"), ("조회수", "view_count")):
         raw = source.get(col, "")
         if not is_empty(raw) and rec.get(field) is None:

@@ -832,8 +832,11 @@ class Service:
 
         warnings = []
         if total == 0 and base is None:
+            # Issue #1 항목 1 — '왜 비었는지'만 알리면 '언제 되는지'를 알 수 없다.
+            # 사유 코드(baseUnavailableReason)는 기계용, 이 문안은 사람·호스트 LLM용이다.
             warnings.append(
-                "비교 기준 이전 스냅샷이 없습니다 — 첫 스냅샷이거나 diff 미생성 상태입니다."
+                "비교 기준 이전 스냅샷이 없습니다 — 첫 스냅샷이거나 diff 미생성 상태입니다. "
+                "월간 스냅샷이 2회 이상 축적되면 다음 회차 빌드부터 변경 이력이 생성됩니다."
             )
         items = [
             {

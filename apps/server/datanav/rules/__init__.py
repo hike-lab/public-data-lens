@@ -22,19 +22,21 @@ def rule(rule_id: str) -> dict:
 
 
 RULE_COMPLETENESS = {
-    "FILE": "catalog-completeness-file-v1.0",
-    "API": "catalog-completeness-api-v1.0",
-    "STD": "catalog-completeness-std-v1.0",
+    "FILE": "catalog-completeness-file-v1.1",
+    "API": "catalog-completeness-api-v1.1",
+    "STD": "catalog-completeness-std-v1.1",
 }
 RULE_FORMAT = "normalize-format-v1.0"
 RULE_CYCLE = "normalize-cycle-v1.0"
 RULE_LICENSE = "normalize-license-v1.0"
+RULE_EMPTY = "normalize-empty-v1.0"
+RULE_DATE = "normalize-date-v1.0"
 RULE_IDENTITY = "record-identity-v1.0"
 RULE_REGION = "region-match-v1.0"
 RULE_RANKING = "ranking-bm25-v1.0"
 RULE_CARD = "card-projection-v1.0"
-RULE_DIFF = "diff-v1.0"
-RULE_ISSUE = "issue-detect-v1.0"
+RULE_DIFF = "diff-v1.1"
+RULE_ISSUE = "issue-detect-v1.1"
 RULE_FRESHNESS = "freshness-v1.0"
 RULE_AIRD = "aird-mmi-v1.1"
 RULE_DISCOVERABILITY = "catalog-discoverability-v1.0"
