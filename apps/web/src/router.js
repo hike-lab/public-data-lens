@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react'
 const VIEW_PATH = {
   search: '/', explore: '/explore', compare: '/compare', changes: '/changes',
   about: '/about', connect: '/connect', concierge: '/concierge',
+  observatory: '/observatory',
 }
 const PATH_VIEW = Object.fromEntries(Object.entries(VIEW_PATH).map(([v, p]) => [p, v]))
 

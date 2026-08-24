@@ -16,15 +16,19 @@ export default function AboutView({ status }) {
       <div className="about-hero">
         <h2>하고 싶은 일을 말하면, 근거와 함께 공공데이터를 찾아드립니다</h2>
         <p>
-          공공데이터 렌즈는 <a href="https://www.data.go.kr" target="_blank" rel="noreferrer">공공데이터포털</a>의
-          월간 목록(약 9.6만 건)을 정규화해, 어떤 데이터가 존재하고 어떤 후보가 검토할 가치가
-          있는지를 <strong>근거 수준과 함께</strong> 제시하는 탐색·판단 계층입니다. 검색·비교·구조
-          확인의 모든 판정은 버전이 관리되는 규칙으로 재현 가능하게 수행되며, 실제 데이터의
-          내용·품질을 보증하지 않고 모든 원문 접근은 포털로 연결합니다.
+          공공데이터 렌즈는 <a href="https://www.data.go.kr" target="_blank" rel="noreferrer">공공데이터포털</a>에
+          등록된 약 9만 6천 건의 데이터를 목적에 맞게 찾고 비교하는 서비스입니다. 데이터가
+          검색된 이유와 확인된 정보의 범위를 함께 보여주어, 어떤 데이터를 먼저 검토해야 할지
+          판단할 수 있게 합니다. 검색과 비교 결과는 공개된 기준에 따라 만들어집니다. 같은
+          데이터와 같은 조건에는 같은 결과가 나오며, 적용된 기준과 버전도 확인할 수 있습니다.
+          다만 이 서비스의 결과가 실제 데이터의 내용이나 품질을 보증하는 것은 아닙니다.
+          데이터 이용과 원문 확인은 공공데이터포털에서 이루어집니다.
         </p>
         <p className="about-research">
-          중앙대학교 HIKE 연구실이 운영하는 AIRD(AI-Ready Data) 표준안 실증 프로젝트이며,
-          생성형 AI 컨시어지는 별도 서비스로 제공됩니다.
+          <a href="http://hike.cau.ac.kr" target="_blank" rel="noreferrer">중앙대학교 HIKE 연구실</a>이
+          운영하며, 현재 제정 중인 AI Ready Data 표준안(정보통신단체표준)에 앞서 개발된
+          독립 구현으로, 표준안의 실현 가능성을 실제 공공데이터로 검증하는 프로젝트이기도
+          합니다.
         </p>
       </div>
 
@@ -34,7 +38,7 @@ export default function AboutView({ status }) {
           <div className="stat-tiles">
             <div className="stat-tile">
               <span className="stat-v">{s.counts.datasets.toLocaleString()}</span>
-              <span className="stat-k">목록 데이터셋</span>
+              <span className="stat-k">전체 목록 수</span>
             </div>
             {s.structureCoverage && (
               <div className="stat-tile">
@@ -44,7 +48,7 @@ export default function AboutView({ status }) {
             )}
             <div className="stat-tile">
               <span className="stat-v">{s.currentSnapshot}</span>
-              <span className="stat-k">현재 스냅샷 (월간 갱신)</span>
+              <span className="stat-k">현재 스냅샷(매월 갱신)</span>
             </div>
             <div className="stat-tile">
               <span className="stat-v">{s.processedAt?.slice(0, 10)}</span>
@@ -70,12 +74,12 @@ export default function AboutView({ status }) {
         <p className="loading">현황을 불러오는 중…</p>
       )}
 
-      <h3>데이터 출처와 원칙</h3>
+      <h3>데이터 출처와 운영 원칙</h3>
       <ul className="about-list">
-        <li>출처: 행정안전부 공공데이터포털 목록개방현황(월간). 본 서비스는 목록 메타데이터의 가공물만 다루며 실데이터를 재배포하지 않습니다.</li>
-        <li>기능에 따라 근거 수준이 다릅니다 — 목록 기반(<code>CATALOG_METADATA_ONLY</code>)과 실파일 관측(<code>FILE_OBSERVATION</code>)을 구분해 표시합니다.</li>
-        <li>이용 기록은 원 IP를 저장하지 않는 익명 로그로 수집되며, 브라우저 DNT/GPC로 거부할 수 있습니다. <a href="/api/resources/privacy" target="_blank" rel="noreferrer">개인정보·로그 고지</a></li>
-        <li>목록 메타데이터의 오류 의심은 <a href="https://github.com/hike-lab/public-data-lens/issues" target="_blank" rel="noreferrer">GitHub Issues</a>로 제보해 주세요 — 검토 후 제공 기관에 환류합니다.</li>
+        <li>공공데이터포털이 매월 공개하는 <a href="https://www.data.go.kr/data/15062804/fileData.do" target="_blank" rel="noreferrer">데이터 목록</a>을 바탕으로 정보를 갱신합니다. 실제 데이터를 대신 배포하지 않으며, 데이터 이용과 원문 확인은 공공데이터포털에서 이루어집니다.</li>
+        <li>목록에 등록된 설명과 실제 파일에서 확인한 구조는 구분합니다. 실제 파일을 확인하지 못하면 확인되지 않았다는 사실도 함께 표시합니다. 화면에서는 각각 목록 정보 기준(<code>CATALOG_METADATA_ONLY</code>)과 실제 파일 확인(<code>FILE_OBSERVATION</code>)으로 구분합니다.</li>
+        <li>서비스 이용 기록에는 접속자의 IP 주소를 저장하지 않습니다. 브라우저의 DNT 또는 GPC 설정을 통해 수집을 거부할 수 있습니다. <a href="/api/resources/privacy" target="_blank" rel="noreferrer">개인정보·로그 안내</a></li>
+        <li>목록 정보에서 오류가 의심되는 경우 <a href="https://github.com/hike-lab/public-data-lens/issues" target="_blank" rel="noreferrer">GitHub Issues</a>를 통해 알려주세요. 확인한 내용은 필요한 경우 데이터 제공 기관에 전달합니다.</li>
       </ul>
 
       {/* 투명성 블록(2026-08-04) — 홈에서 이동: 무엇을 알고 모르는지, 판정 인프라 공개 */}

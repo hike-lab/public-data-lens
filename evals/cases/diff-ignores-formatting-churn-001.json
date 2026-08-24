@@ -1,0 +1,35 @@
+{
+  "id": "diff-ignores-formatting-churn-001",
+  "concept": "diff-v1.1 · changes[].changedFields",
+  "contractVersion": "1.8.0",
+  "given": {
+    "tool": "get_catalog_changes",
+    "request": {"pageSize": 1},
+    "response": {
+      "baseSnapshot": "2026-06",
+      "currentSnapshot": "2026-07",
+      "summary": {
+        "ADDED": 415,
+        "MODIFIED": 5564,
+        "MISSING_FROM_SNAPSHOT": 361,
+        "POSSIBLE_IDENTITY_CHANGE": 2
+      },
+      "totalEstimate": 6342
+    }
+  },
+  "correct": {
+    "judgment": "MODIFIED 5,564는 실질 변경 건수다 — 두 회차 원본 CSV를 문자열로 직접 비교하면 17,812건이 나오지만 그 차이는 발행자의 내보내기 표기 요동이다.",
+    "rationale": "diff-v1.1은 (1) 확장자를 원시값이 아닌 정규 토큰 목록(formats)으로 비교하고, (2) title·org_name·theme_raw·license_raw·description을 공백에 둔감하게 비교한다. 2026-07 초판에서 설명 필드 줄바꿈 보유행이 0→5,961→0으로 흔들렸고, API 유형 11,960행의 날짜가 엑셀 일련번호로 기재됐다. 이런 표기 변화는 글자 하나 바뀌지 않은 행을 MODIFIED로 만든다. 저장값은 원문을 그대로 유지하며 비교 시점에만 정규화한다."
+  },
+  "misreadings": [
+    "원본 CSV를 자체 비교해 얻은 17,812건과 대조하고 렌즈가 변경을 누락했다고 판단한다.",
+    "MODIFIED 건수를 '기관들이 이만큼 메타데이터를 갱신했다'는 활동량 지표로 사용한다 — modified_date 5,505건이 대부분이며 표기 요동은 이미 제거됐다.",
+    "changedFields에 description이 없으면 설명이 원문 그대로라고 단정한다 — 공백·줄바꿈은 달라져 있을 수 있고 저장값은 회차 원문이다.",
+    "diff-v1.0과 v1.1의 건수를 시계열로 이어 붙여 추세로 읽는다 — 판정 규칙이 다르다."
+  ],
+  "provenance": {
+    "source": "incident",
+    "date": "2026-08-24",
+    "reference": "decisions/016(diff-v1.1·normalize-date-v1.0·수용 게이트), issue #1(외부 이용자가 첫 diff를 검증 예정)"
+  }
+}

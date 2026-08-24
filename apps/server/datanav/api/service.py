@@ -45,6 +45,10 @@ _FRESHNESS_DAYS = {
 
 _VALID_LIST_TYPES = ("FILE", "API", "STD")
 _STATS_AXES = ("theme", "org", "format", "completeness", "listType", "family")
+# v1.8 additive: 교차 집계 허용 조합 — 범용 OLAP이 아니라 결정론적으로 지원하는
+# 조합만 명시한다(그 외는 FILTER_NOT_AVAILABLE). 실사용 요구(Issue #1): 기관×완전성/포맷.
+_STATS_BREAKDOWNS = {"org": ("listType", "format", "completeness"),
+                     "theme": ("listType", "format")}
 _CHANGE_STATUSES = (
     "ADDED", "MODIFIED", "MISSING_FROM_SNAPSHOT", "REAPPEARED",
     "POSSIBLE_IDENTITY_CHANGE", "OFFICIALLY_WITHDRAWN",
@@ -126,11 +130,16 @@ class Service:
         page_size: int = DEFAULT_PAGE_SIZE,
         interpret: bool = False,
         sort: str | None = None,
+        org_match: str = "CONTAINS",
     ) -> dict:
         # v1.6 additive: 정렬 선택 — relevance(질의 필요)|modified. 기본은 기존 동작
         # (질의 있으면 관련도, 없으면 최신 수정순)이라 미지정 소비자는 불변.
         if sort and sort not in ("relevance", "modified"):
             raise InvalidArgument("sort는 relevance|modified", {"sort": sort})
+        # v1.8 additive: 기관명 일치 방식 — 기본 CONTAINS는 기존 동작 그대로.
+        # EXACT는 '광주광역시' 검색에 '…광주광역시경찰청' 등이 섞이는 것을 차단한다.
+        if org_match not in ("CONTAINS", "EXACT"):
+            raise InvalidArgument("orgMatch는 CONTAINS|EXACT", {"orgMatch": org_match})
         if query and len(query) > MAX_QUERY_LENGTH:
             raise InvalidArgument(f"query는 {MAX_QUERY_LENGTH}자 이하", {"length": len(query)})
 
@@ -171,8 +180,12 @@ class Service:
             where.append("(d.theme_top = ? OR d.theme_raw = ?)")
             params += [theme, theme]
         if org:
-            where.append("d.org_name LIKE ?")
-            params.append(f"%{org}%")
+            if org_match == "EXACT":
+                where.append("d.org_name = ?")
+                params.append(org)
+            else:
+                where.append("d.org_name LIKE ?")
+                params.append(f"%{org}%")
         if fmt:
             where.append(
                 "EXISTS (SELECT 1 FROM json_each(d.formats) jf WHERE jf.value = ?)"
@@ -228,6 +241,12 @@ class Service:
             score_col = "NULL AS score"
             total = self._count(joins, where, params)
 
+        if org and org_match == "EXACT" and total == 0:
+            warnings.append(
+                "org 정확일치(EXACT) 결과 0건 — 검색 결과 없음은 데이터 부재가 아닙니다. "
+                "기관명 표기가 다를 수 있으니 CONTAINS 재시도를 고려하세요."
+            )
+
         where_sql = ("WHERE " + " AND ".join(where)) if where else ""
         rows = self.conn.execute(
             f"SELECT d.*, {score_col} FROM datasets d {joins} {where_sql} {order} LIMIT ? OFFSET ?",
@@ -236,9 +255,11 @@ class Service:
 
         q_tokens = [t.lower() for t in re.split(r"\s+", query.strip()) if t] if query and query.strip() else []
         items = []
-        for r in rows:
+        for i, r in enumerate(rows):
             rec = row_to_record(r)
             item = self._summary(rec)
+            # v1.8 additive: 서버 정렬의 절대 순위 — score 부호 오독과 무관한 정본 순위
+            item["rank"] = offset + i + 1
             if rec.get("score") is not None:
                 item["score"] = round(rec["score"], 4)
             if q_tokens:
@@ -260,6 +281,9 @@ class Service:
                 # v1.5 additive: 정렬 방향을 사실로 노출(프론트의 문자열 패턴 추론 제거)
                 "direction": "desc",
                 "basis": "modified_date" if (not fts_mode or sort == "modified") else "relevance",
+                # v1.8 additive: score 해석 방향 — SQLite FTS5 bm25()는 낮을수록 상위(음수).
+                # sort=modified여도 score 값 자체의 의미는 동일하다(정렬 기준은 basis가 말한다).
+                "scoreDirection": "LOWER_IS_MORE_RELEVANT" if fts_mode else "NOT_APPLICABLE",
             },
         }
         rules = [RULE_RANKING, RULE_REGION, RULE_IDENTITY]
@@ -847,23 +871,32 @@ class Service:
         return envelope(data, self.snapshot, [RULE_DIFF], warnings)
 
     # ------------------------------------------------------------ stats
-    def get_catalog_stats(self, axis: str, limit: int = 30) -> dict:
+    def get_catalog_stats(self, axis: str, limit: int = 30, breakdown: str | None = None) -> dict:
         if axis not in _STATS_AXES:
             raise InvalidArgument(f"axis는 {_STATS_AXES} 중 하나", {"axis": axis})
+        # v1.8 additive: 제한적 교차 집계 — 허용 조합 밖은 상태로 알린다(미지원 ≠ 0건)
+        if breakdown and breakdown not in _STATS_BREAKDOWNS.get(axis, ()):
+            raise FilterNotAvailable(
+                f"breakdown은 축별 허용 조합만 지원: {_STATS_BREAKDOWNS}",
+                {"axis": axis, "breakdown": breakdown},
+            )
         limit = min(max(limit, 1), 200)
         rules = []
-        if axis == "theme":
+        if axis in ("theme", "org"):
+            key_col = "theme_top" if axis == "theme" else "org_name"
             rows = self.conn.execute(
-                "SELECT theme_top AS k, COUNT(*) AS n FROM datasets GROUP BY theme_top ORDER BY n DESC LIMIT ?",
+                f"SELECT {key_col} AS k, COUNT(*) AS n FROM datasets GROUP BY {key_col} ORDER BY n DESC LIMIT ?",
                 (limit,),
             ).fetchall()
             data = {"axis": axis, "buckets": [{"key": r["k"], "count": r["n"]} for r in rows]}
-        elif axis == "org":
-            rows = self.conn.execute(
-                "SELECT org_name AS k, COUNT(*) AS n FROM datasets GROUP BY org_name ORDER BY n DESC LIMIT ?",
-                (limit,),
-            ).fetchall()
-            data = {"axis": axis, "buckets": [{"key": r["k"], "count": r["n"]} for r in rows]}
+            if breakdown:
+                for b in data["buckets"]:
+                    b["breakdown"] = self._stats_breakdown(key_col, b["key"], breakdown)
+                data["breakdown"] = breakdown
+                if breakdown == "completeness":
+                    rules = list(RULE_COMPLETENESS.values())
+                    data["note"] = ("완전성 평균은 목록유형 프로파일별 산출(FILE/API/STD 분모 상이) — "
+                                    "프로파일 간 합산·직접 비교는 금지.")
         elif axis == "format":
             rows = self.conn.execute(
                 "SELECT jf.value AS k, COUNT(*) AS n FROM datasets d, json_each(d.formats) jf "
@@ -929,6 +962,29 @@ class Service:
                 })
             data = {"axis": axis, "profiles": buckets}
         return envelope(data, self.snapshot, rules, [])
+
+    def _stats_breakdown(self, key_col: str, key, breakdown: str) -> dict:
+        """버킷 내 하위 분포(v1.8 additive) — key가 NULL인 버킷도 IS 비교로 포함한다."""
+        if breakdown == "listType":
+            rows = self.conn.execute(
+                f"SELECT list_type AS k, COUNT(*) AS n FROM datasets WHERE {key_col} IS ? "
+                "GROUP BY list_type ORDER BY n DESC", (key,),
+            ).fetchall()
+            return {r["k"]: r["n"] for r in rows}
+        if breakdown == "format":
+            rows = self.conn.execute(
+                f"SELECT jf.value AS k, COUNT(*) AS n FROM datasets d, json_each(d.formats) jf "
+                f"WHERE d.{key_col} IS ? GROUP BY jf.value ORDER BY n DESC", (key,),
+            ).fetchall()
+            return {r["k"]: r["n"] for r in rows}
+        # completeness — 프로파일별 건수·평균(분모가 달라 프로파일 간 합산 금지)
+        rows = self.conn.execute(
+            f"SELECT completeness_profile AS p, COUNT(*) AS n, AVG(completeness_score) AS a "
+            f"FROM datasets WHERE {key_col} IS ? GROUP BY completeness_profile", (key,),
+        ).fetchall()
+        return {r["p"]: {"count": r["n"],
+                         "averageCompleteness": round(r["a"], 4) if r["a"] is not None else None}
+                for r in rows}
 
     # ------------------------------------------------------------ status/context
     def get_status(self) -> dict:

@@ -3,6 +3,7 @@ import pytest
 
 from datanav.api.errors import (
     DatasetNotFound,
+    FilterNotAvailable,
     InvalidArgument,
     TooManyDatasets,
 )
@@ -25,6 +26,22 @@ def test_search_envelope_and_ranking_meta(catalog_service):
     rk = r["data"]["ranking"]
     assert rk["version"] == "ranking-bm25-v1.0"
     assert rk["indexVersion"] and rk["tieBreak"]
+    # v1.8: score 해석 방향은 사실로 노출 — 질의 있음 = BM25(낮을수록 상위)
+    assert rk["scoreDirection"] == "LOWER_IS_MORE_RELEVANT"
+    items = r["data"]["items"]
+    assert [i["rank"] for i in items] == list(range(1, len(items) + 1))
+    # rank가 정본 순위: score가 있으면 rank 오름차순에서 score도 오름차순(낮을수록 상위)
+    scores = [i["score"] for i in items if "score" in i]
+    assert scores == sorted(scores)
+
+
+def test_search_without_query_rank_and_score_direction(catalog_service):
+    r = catalog_service.search_datasets(page_size=2)
+    assert r["data"]["ranking"]["scoreDirection"] == "NOT_APPLICABLE"  # score 부재
+    assert [i["rank"] for i in r["data"]["items"]] == [1, 2]
+    nxt = catalog_service.search_datasets(page_size=2, cursor=r["data"]["nextCursor"])
+    # rank는 커서 오프셋을 반영한 절대 순위다
+    assert [i["rank"] for i in nxt["data"]["items"]] == [3, 4]
 
 
 def test_cursor_pagination_no_dup_no_gap(catalog_service):
@@ -117,3 +134,91 @@ def test_region_evidence_in_results(catalog_service):
     for item in r["data"]["items"]:
         seoul = [x for x in item["regions"] if x["code"] == "KR-11"]
         assert seoul and seoul[0]["evidence"] == "EXPLICIT_SPATIAL"
+
+
+# ---------------------------------------------------------------- v1.8: orgMatch·교차 집계
+
+
+def _db_with_orgs(tmp_path):
+    """기관명 변형 3종 픽스처 — Issue #1의 '광주광역시' 부분 일치 혼입 사례 재현."""
+    from datanav.pipeline.completeness import compute_completeness
+    from datanav.store.db import build_fts, create_db, insert_dataset
+    from tests.conftest import _catalog_rec
+
+    db = tmp_path / "orgs.db"
+    conn = create_db(db)
+    for rid, key, org in [
+        ("org-001", "k-001", "광주광역시"),
+        ("org-002", "k-002", "광주광역시경찰청"),
+        ("org-003", "k-003", "광주광역시 산하기관"),
+    ]:
+        rec = _catalog_rec(rid, key, title=f"{org} 데이터")
+        rec["org_name"] = org
+        insert_dataset(conn, rec, compute_completeness(rec))
+    conn.executemany(
+        "INSERT INTO build_meta(key, value) VALUES (?, ?)",
+        [("snapshot", "2099-01"), ("processedAt", "2099-01-31T00:00:00Z"),
+         ("release", "2099-01_fixture")],
+    )
+    build_fts(conn)
+    conn.commit()
+    conn.close()
+    return db
+
+
+def test_org_match_exact_vs_contains(tmp_path):
+    from datanav.api.service import Service
+    svc = Service(_db_with_orgs(tmp_path))
+    # 기본값(CONTAINS)은 기존 동작 그대로 — 하위 호환
+    contains = svc.search_datasets(org="광주광역시")
+    assert contains["data"]["totalEstimate"] == 3
+    exact = svc.search_datasets(org="광주광역시", org_match="EXACT")
+    assert exact["data"]["totalEstimate"] == 1
+    assert exact["data"]["items"][0]["orgName"] == "광주광역시"
+
+
+def test_org_match_exact_zero_is_not_absence(tmp_path):
+    from datanav.api.service import Service
+    svc = Service(_db_with_orgs(tmp_path))
+    zero = svc.search_datasets(org="광주광역", org_match="EXACT")  # 표기 불일치
+    assert zero["data"]["totalEstimate"] == 0
+    assert any("CONTAINS" in w for w in zero["warnings"])  # 부재 단정 방지 안내
+
+
+def test_org_match_invalid_value(catalog_service):
+    with pytest.raises(InvalidArgument):
+        catalog_service.search_datasets(org="x", org_match="FUZZY")
+
+
+def test_stats_breakdown_listtype_and_format(catalog_service):
+    r = catalog_service.get_catalog_stats("org", breakdown="listType")
+    _envelope_ok(r)
+    b = r["data"]["buckets"][0]
+    assert b["key"] == "테스트기관"
+    assert b["breakdown"] == {"FILE": 3, "API": 1}
+    assert r["data"]["breakdown"] == "listType"
+    f = catalog_service.get_catalog_stats("org", breakdown="format")
+    assert f["data"]["buckets"][0]["breakdown"] == {"CSV": 3}
+
+
+def test_stats_breakdown_completeness_is_per_profile(catalog_service):
+    r = catalog_service.get_catalog_stats("org", breakdown="completeness")
+    _envelope_ok(r)
+    bd = r["data"]["buckets"][0]["breakdown"]
+    assert set(bd) == {"FILE", "API"}  # 프로파일별 분리 — 합산 없음
+    for v in bd.values():
+        assert v["count"] > 0
+        assert 0 <= v["averageCompleteness"] <= 1
+    assert "프로파일" in r["data"]["note"]
+    assert any(rv.startswith("catalog-completeness-") for rv in r["meta"]["ruleVersions"])
+
+
+def test_stats_breakdown_disallowed_combo(catalog_service):
+    with pytest.raises(FilterNotAvailable):
+        catalog_service.get_catalog_stats("format", breakdown="listType")
+    with pytest.raises(FilterNotAvailable):
+        catalog_service.get_catalog_stats("org", breakdown="theme")
+    # breakdown 미지정 시 기존 응답 형태 불변(하위 호환)
+    r = catalog_service.get_catalog_stats("org")
+    assert "breakdown" not in r["data"]
+    assert all("breakdown" not in b for b in r["data"]["buckets"])

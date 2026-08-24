@@ -19,31 +19,34 @@ export function ExplorationStoryBlock({ onTryPurpose }) {
   if (!plan) return null
   return (
     <section className="home-block story-block">
-      <h3>탐색은 이렇게 진행됩니다</h3>
-      <p className="story-purpose">"{STORY_PURPOSE}"</p>
+      <h3>이렇게 탐색합니다</h3>
+      <p className="story-purpose">“{STORY_PURPOSE}”</p>
       <ol className="story-steps">
         <li>
-          <strong>목적 해석</strong> — 검색어 {plan.interpretedPurpose.searchTerms.join(', ')}
+          <strong>목적 파악</strong> — 질문에서 {plan.interpretedPurpose.searchTerms.map((t) => `‘${t}’`).join(', ')}을 핵심어로 찾습니다
           {plan.interpretedPurpose.regionApplied && <> · 지역 {plan.interpretedPurpose.regionApplied}(문장에서 추출)</>}
         </li>
         <li>
-          <strong>후보 발견</strong> — {plan.recommendedDatasets.map((c) => c.title).join(' · ')}
+          <strong>후보 찾기</strong> — {plan.recommendedDatasets.map((c) => c.title).join(' · ')}
         </li>
         <li>
-          <strong>역할과 근거</strong> — 후보마다 역할(주 대상·공간/시간 결합)과 근거 신호
-          4종이 개별로 붙습니다. 하나의 점수로 합치지 않습니다.
+          <strong>예상 역할과 선정 근거</strong> — 각 데이터가 분석에서 어떤 역할을 할 수
+          있는지와 후보로 선정된 근거를 보여줍니다. 여러 정보를 하나의 점수로 합쳐 순위를
+          매기지는 않습니다.
         </li>
         <li>
           <strong>한계 확인</strong> — {plan.nextChecks[0]}
         </li>
       </ol>
       <p className="story-note">
-        전 과정이 결정론 규칙(<code>plan-assembly-v1.0</code>)입니다 — LLM 없음, 품질 판정
-        없음(<code>NOT_ASSESSED</code>), 결과는 항상 초안(<code>DRAFT</code>).
+        이 결과는 생성형 AI가 작성한 답변이 아닙니다. 정해진 규칙(<code>plan-assembly-v1.0</code>)에
+        따라 만들어지며, 같은 데이터와 같은 입력에는 같은 결과를 제공합니다. 데이터 품질을
+        판정한 결과가 아니므로(<code>NOT_ASSESSED</code>), 실제 활용 전에 검토가 필요한
+        초안(<code>DRAFT</code>)입니다.
       </p>
       {onTryPurpose && (
         <button type="button" className="link story-cta" onClick={() => onTryPurpose(STORY_PURPOSE)}>
-          내 목적으로 탐색해 보기 →
+          내 목적에 맞는 데이터 찾기 →
         </button>
       )}
     </section>
@@ -153,9 +156,11 @@ export function OpenInfraBlock() {
   if (!registry?.rules) return null
   return (
     <section className="home-block">
-      <h3>열린 판정 인프라 — 규칙 레지스트리 {registry.rules.length}종</h3>
+      <h3>공개된 검색·비교 기준 — {registry.rules.length}개 규칙</h3>
       <p className="infra-sub">
-        모든 판정에는 규칙 버전이 붙습니다. 레지스트리 원문·스키마·프롬프트가 그대로 공개됩니다.
+        데이터를 찾고 비교할 때 적용하는 {registry.rules.length}개 규칙을 공개하고 있습니다.
+        각 결과에는 적용한 규칙과 버전이 기록되므로, 어떤 기준으로 결과가 만들어졌는지
+        확인하고 다시 검증할 수 있습니다.
       </p>
       <ul className="rule-list">
         {registry.rules.map((r) => (
@@ -173,24 +178,24 @@ export function OpenInfraBlock() {
       </ul>
       {evalReport?.summary && (
         <p className="eval-metrics">
-          검색 품질(골든셋 {evalReport.summary.queries}질의):
+          검색 성능 참고값({evalReport.summary.queries}개 검색 질문으로 측정):
           {' '}P@10 {evalReport.summary.meanPrecisionAt10}
           {' '}· R@10 {evalReport.summary.meanRecallAt10}
           {' '}· nDCG@10 {evalReport.summary.meanNdcgAt10}
           {!evalReport.summary.humanReviewed && (
-            <span className="rule-flag"> — 자동 생성 골든셋(인간 검토 전)</span>
+            <span className="rule-flag"> — 질문은 자동 생성되었으며 아직 사람이 검토하지 않은 결과입니다</span>
           )}
           {' '}· <a href="/api/resources/eval" target="_blank" rel="noreferrer">전체 리포트</a>
         </p>
       )}
       <p className="infra-links">
-        원문:{' '}
+        기술 자료:{' '}
         <a href="/api/resources/rules" target="_blank" rel="noreferrer">규칙 레지스트리</a> ·{' '}
-        <a href="/api/resources/spec/tools" target="_blank" rel="noreferrer">Tool 스키마</a> ·{' '}
+        <a href="/api/resources/spec/tools" target="_blank" rel="noreferrer">도구 스키마</a> ·{' '}
         <a href="/api/resources/context" target="_blank" rel="noreferrer">JSON-LD Context</a> ·{' '}
         <a href="/api/resources/shapes" target="_blank" rel="noreferrer">SHACL</a> ·{' '}
-        <a href="/api/resources/prompts/build-data-plan" target="_blank" rel="noreferrer">Prompt 원문</a> ·{' '}
-        <a href="/api/resources/privacy" target="_blank" rel="noreferrer">개인정보·로그 고지</a>
+        <a href="/api/resources/prompts/build-data-plan" target="_blank" rel="noreferrer">예시 프롬프트</a> ·{' '}
+        <a href="/api/resources/privacy" target="_blank" rel="noreferrer">개인정보·로그 안내</a>
       </p>
     </section>
   )

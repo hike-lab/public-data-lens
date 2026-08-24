@@ -20,7 +20,9 @@ export default function ExploreView({ onOpen, planAvailable, onTryPurpose }) {
     <section className="explore">
       <h2 className="explore-title">둘러보기 — 이 서비스는 데이터를 이렇게 읽습니다</h2>
       <p className="result-meta">
-        제목 검색이 아니라 구조·근거·한계의 탐색입니다. 아래는 전부 현재 스냅샷의 실데이터입니다.
+        데이터 제목만 검색하지 않습니다. 데이터의 구조와 선정 근거, 활용할 때 확인해야 할
+        한계까지 함께 살펴봅니다. 아래 예시는 현재 서비스에 반영된 공공데이터포털의 실제
+        목록을 바탕으로 합니다.
       </p>
 
       {planAvailable && <ExplorationStoryBlock onTryPurpose={onTryPurpose} />}
@@ -29,7 +31,7 @@ export default function ExploreView({ onOpen, planAvailable, onTryPurpose }) {
 
       {structured.length > 0 && (
         <div className="home-block live-block">
-          <h3>지금 바로 구조까지 볼 수 있는 데이터 — 최신 수정분 중 3건</h3>
+          <h3>구조를 바로 확인할 수 있는 데이터 — 최근 수정된 데이터 중 3건</h3>
           <ul className="results">
             {structured.map((item) => (
               <DatasetRow

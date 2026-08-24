@@ -35,7 +35,7 @@ export default function ChangesView({ onOpen }) {
         </select>
         {body?.data.baseSnapshot && (
           <span className="result-meta">
-            기준 {body.data.baseSnapshot} → 현재 {body.data.currentSnapshot}
+            비교 기준: {body.data.baseSnapshot} → {body.data.currentSnapshot}
           </span>
         )}
       </div>
@@ -46,7 +46,7 @@ export default function ChangesView({ onOpen }) {
       {/* v1.6: 상태별 집계 — 무엇이 얼마나 바뀌었는지 한 줄 요약 */}
       {body?.data?.summary && Object.keys(body.data.summary).length > 0 && (
         <p className="result-meta">
-          이번 스냅샷 변경 요약:{' '}
+          이번 스냅샷에서 확인된 변경:{' '}
           {Object.entries(body.data.summary)
             .map(([s, n]) => `${CHANGE_STATUS_LABEL[s] || s} ${n.toLocaleString()}건`)
             .join(' · ')}
