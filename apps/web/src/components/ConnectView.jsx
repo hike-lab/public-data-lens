@@ -140,6 +140,14 @@ export default function ConnectView() {
         </details>
       </div>
 
+      {/* 입력 파라미터가 추가된 갱신 후 기존 연결은 옛 도구 목록을 계속 쓴다 —
+          MCP 호스트가 연결 시점의 목록을 캐시하기 때문. 응답 필드 추가·데이터 갱신은 해당 없음. */}
+      <p className="connect-note connect-caveat">
+        <strong>새로 추가된 기능이 보이지 않으면</strong> 커넥터를 한 번 다시 연결해 주세요.
+        AI 앱은 연결한 시점의 기능 목록을 기억하기 때문에, 그 뒤에 추가된 기능은
+        재연결 후에 나타납니다. 데이터 갱신은 재연결 없이 바로 반영됩니다.
+      </p>
+
       <h3>이렇게 물어보세요</h3>
       <ul className="about-list">
         {EXAMPLE_PROMPTS.map((p) => <li key={p}><em>“{p}”</em></li>)}
