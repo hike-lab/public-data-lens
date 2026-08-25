@@ -255,13 +255,15 @@ def get_catalog_changes(
 def get_catalog_stats(
     axis: Annotated[str, Field(description="통계 축: theme|org|format|completeness|listType|family")],
     limit: Annotated[int, Field(description="버킷 수(1~200, completeness·family 축에는 미적용)", ge=1, le=200)] = 30,
-    breakdown: Annotated[str | None, Field(description="교차 집계(v1.8): axis=org → listType|format|completeness, axis=theme → listType|format. 버킷별 하위 분포(완전성은 프로파일별 건수·평균)를 추가한다. 그 외 조합은 FILTER_NOT_AVAILABLE")] = None,
+    breakdown: Annotated[str | None, Field(description="교차 집계(v1.8): axis=org → listType|format|completeness, axis=theme → listType|format. 버킷별 하위 분포(완전성은 프로파일별 건수·평균)를 추가한다. axis=org는 미지정 시 completeness가 기본 적용된다. 그 외 조합은 FILTER_NOT_AVAILABLE")] = None,
 ) -> str:
     """카탈로그 통계. axis: theme | org | format | completeness | listType | family.
     completeness는 목록유형별 프로파일 기준(FILE/API/STD 별도 규칙).
     family(v1.8)는 계열 후보 통계 — 자동 탐지 후보이며 확정된 계열 수가 아니다.
     breakdown(v1.8)으로 기관·주제 축의 제한적 교차 집계를 얻는다(예: 기관×포맷) —
-    전수 수집 없이 기관 간 비교가 가능하다. 완전성 평균은 프로파일별이며 합산 금지."""
+    전수 수집 없이 기관 간 비교가 가능하다. axis=org는 breakdown 미지정 시 completeness가
+    기본 적용되며, 실제 적용값은 응답의 breakdown 필드에 표기된다.
+    완전성 평균은 프로파일별이며 합산 금지."""
     return _guard(lambda: _svc().get_catalog_stats(axis, limit, breakdown), tool="get_catalog_stats")
 
 

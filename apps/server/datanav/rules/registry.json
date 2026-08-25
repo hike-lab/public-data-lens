@@ -246,6 +246,12 @@
       "definition": "목록 메타데이터 충실도 8지표(식별자·제목·설명·발행자·라이선스·키워드·날짜 기재율, URL 형식 유효율)의 평균 = catalogMetadataReadinessScore. AIRD MMI가 아니며 Q-Tier·DM 판정에 사용하지 않는 참고 지표."
     },
     {
+      "ruleId": "catalog-stats-breakdown-v1.0",
+      "title": "통계 교차 집계 기본 적용",
+      "effectiveDate": "2026-08-25",
+      "definition": "get_catalog_stats의 breakdown 허용 조합: org × listType|format|completeness, theme × listType|format. 그 외는 FILTER_NOT_AVAILABLE(미지원 ≠ 0건). axis=org는 breakdown 미지정 시 completeness를 기본 적용하며, 실제 적용값은 응답 breakdown 필드에 표기한다. breakdown='none'으로 기본 적용을 끌 수 있다(응답 크기 절감 — limit=200에서 약 22KB 차이). 완전성 평균은 프로파일별(FILE/API/STD 분모 16/15/12)이며 프로파일 간 합산·직접 비교를 금지한다. 기본 적용 근거: MCP 호스트는 연결 시점의 도구 목록을 캐시하므로 신규 입력 파라미터는 재연결 전까지 기존 클라이언트에 보이지 않는다. 응답 필드 추가는 캐시에 걸리지 않는다."
+    },
+    {
       "ruleId": "column-type-observation-v1.0",
       "title": "컬럼 유형 관측 (예시값 기반)",
       "effectiveDate": "2026-07-30",

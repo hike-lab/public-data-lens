@@ -1,7 +1,7 @@
 {
   "specVersion": "1.8.0",
   "status": "APPROVED — v1.0.0 동결(2026-07-17) 후 v1.1.0 minor(2026-07-28): completeness 확장 / v1.2.0 minor(2026-07-30): 구조 관측 Tool / v1.3.0 minor(2026-07-30): search_by_columns Tool·compare structureComparison 추가(S2) / v1.4.0 minor(2026-08-03): build_data_plan Tool(결정론적 활용 계획 초안 — LLM 미사용·DRAFT 전용) / v1.7.0 minor(2026-08-04): 검색 도구(search_datasets·search_by_columns) 기본 pageSize 20→10 — 호스트 LLM 응답 토큰 절감, 스키마·필드 불변 / v1.8.0 minor(미배포 누적 — ADR-014 배포 트레인 동결, 공개 배포 시 동결): ① 계열 후보 노출(2026-08-05, ADR-011) — get_dataset familyCandidate(nullable)·get_catalog_stats family 축 additive 추가, 후보는 판정이 아니며 배포는 사람 검증 게이트 통과 후 ② 검색 순위 오독 방지(2026-08-08, ADR-013) — search_datasets items[].rank(응답 순위 정수)·ranking.scoreDirection additive 추가, BM25(FTS5) score는 낮을수록 상위 ③ 기관 정확일치·제한적 교차 집계(2026-08-09, ADR-015, 실사용 Issue #1) — search_datasets orgMatch(CONTAINS|EXACT)·get_catalog_stats breakdown(org: listType|format|completeness, theme: listType|format) additive 추가, 완전성 평균은 프로파일별(합산 금지). breaking은 재승인 필요",
-  "generatedAt": "2026-08-24T10:57:08Z",
+  "generatedAt": "2026-08-25T09:34:57Z",
   "baseUri": "https://service.datahub.kr/projects/public-data-lens",
   "compatibilityPolicy": "필드 추가는 하위 호환(minor). required 필드 제거·타입/의미 변경·오류 코드 제거는 breaking(major). meta.schemaVersion으로 전달.",
   "inputLimits": {
@@ -1884,7 +1884,7 @@
       }
     },
     "get_catalog_stats": {
-      "description": "카탈로그 통계. axis: theme | org | format | completeness | listType | family.\n    completeness는 목록유형별 프로파일 기준(FILE/API/STD 별도 규칙).\n    family(v1.8)는 계열 후보 통계 — 자동 탐지 후보이며 확정된 계열 수가 아니다.\n    breakdown(v1.8)으로 기관·주제 축의 제한적 교차 집계를 얻는다(예: 기관×포맷) —\n    전수 수집 없이 기관 간 비교가 가능하다. 완전성 평균은 프로파일별이며 합산 금지.",
+      "description": "카탈로그 통계. axis: theme | org | format | completeness | listType | family.\n    completeness는 목록유형별 프로파일 기준(FILE/API/STD 별도 규칙).\n    family(v1.8)는 계열 후보 통계 — 자동 탐지 후보이며 확정된 계열 수가 아니다.\n    breakdown(v1.8)으로 기관·주제 축의 제한적 교차 집계를 얻는다(예: 기관×포맷) —\n    전수 수집 없이 기관 간 비교가 가능하다. axis=org는 breakdown 미지정 시 completeness가\n    기본 적용되며, 실제 적용값은 응답의 breakdown 필드에 표기된다.\n    완전성 평균은 프로파일별이며 합산 금지.",
       "inputSchema": {
         "properties": {
           "axis": {
@@ -1910,7 +1910,7 @@
               }
             ],
             "default": null,
-            "description": "교차 집계(v1.8): axis=org → listType|format|completeness, axis=theme → listType|format. 버킷별 하위 분포(완전성은 프로파일별 건수·평균)를 추가한다. 그 외 조합은 FILTER_NOT_AVAILABLE",
+            "description": "교차 집계(v1.8): axis=org → listType|format|completeness, axis=theme → listType|format. 버킷별 하위 분포(완전성은 프로파일별 건수·평균)를 추가한다. axis=org는 미지정 시 completeness가 기본 적용된다. 그 외 조합은 FILTER_NOT_AVAILABLE",
             "title": "Breakdown"
           }
         },

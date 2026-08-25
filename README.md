@@ -38,6 +38,8 @@ https://service.datahub.kr/projects/public-data-lens/mcp
 
 ChatGPT 개발자 모드에서도 같은 주소를 `No Authentication`으로 등록할 수 있습니다. Claude Code 등 개발 도구는 `.mcp.json`에 등록합니다.
 
+> **새로 추가된 기능이 보이지 않으면 커넥터를 다시 연결하세요.** MCP 호스트는 연결 시점의 도구 목록을 캐시하므로, 그 뒤에 추가된 Tool·파라미터는 재연결 후에 나타납니다. 월간 스냅샷 갱신과 응답 필드 추가는 재연결 없이 즉시 반영됩니다. 재연결이 필요한 갱신은 [릴리스 노트](https://github.com/hike-lab/public-data-lens/releases)에 표기합니다.
+
 ```json
 {
   "mcpServers": {
