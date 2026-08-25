@@ -1,6 +1,7 @@
 """§11 수용 기준: 커서 페이징 무중복·무누락, 4뷰 정합, 오류 일관성, 전 응답 스냅샷·rule 버전."""
 import pytest
 
+from datanav.rules import RULE_COMPLETENESS
 from datanav.api.errors import (
     DatasetNotFound,
     FilterNotAvailable,
@@ -218,7 +219,22 @@ def test_stats_breakdown_disallowed_combo(catalog_service):
         catalog_service.get_catalog_stats("format", breakdown="listType")
     with pytest.raises(FilterNotAvailable):
         catalog_service.get_catalog_stats("org", breakdown="theme")
-    # breakdown 미지정 시 기존 응답 형태 불변(하위 호환)
+    # axis=org는 미지정 시 completeness가 기본 적용된다(ADR-019) —
+    # MCP 호스트가 도구 목록을 캐시해 신규 입력 파라미터가 기존 연결에 보이지 않기 때문.
     r = catalog_service.get_catalog_stats("org")
+    assert r["data"]["breakdown"] == "completeness"
+    assert all("breakdown" in b for b in r["data"]["buckets"])
+    assert set(RULE_COMPLETENESS.values()) <= set(r["meta"]["ruleVersions"])
+
+    # breakdown="none"으로 기본 적용을 끌 수 있다(응답 크기 절감 — limit이 클 때 유효)
+    r = catalog_service.get_catalog_stats("org", breakdown="none")
     assert "breakdown" not in r["data"]
     assert all("breakdown" not in b for b in r["data"]["buckets"])
+
+    # 기본값이 없는 축은 종전대로 미지정 시 분해하지 않는다
+    r = catalog_service.get_catalog_stats("theme")
+    assert "breakdown" not in r["data"]
+
+    # 명시 지정은 기본값보다 우선한다
+    r = catalog_service.get_catalog_stats("org", breakdown="format")
+    assert r["data"]["breakdown"] == "format"

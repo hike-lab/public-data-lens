@@ -49,6 +49,14 @@ _STATS_AXES = ("theme", "org", "format", "completeness", "listType", "family")
 # 조합만 명시한다(그 외는 FILTER_NOT_AVAILABLE). 실사용 요구(Issue #1): 기관×완전성/포맷.
 _STATS_BREAKDOWNS = {"org": ("listType", "format", "completeness"),
                      "theme": ("listType", "format")}
+# breakdown 미지정 시의 기본값 — MCP 호스트는 연결 시점의 도구 목록을 캐시하므로,
+# 신규 입력 파라미터(breakdown)는 재연결 전까지 기존 클라이언트에 보이지 않는다.
+# 응답 필드 추가는 캐시에 걸리지 않으므로, 기관 비교라는 실사용 요구(Issue #1 제안 1)를
+# 파라미터 없이도 충족시킨다. 명시 지정은 그대로 우선한다.
+_STATS_BREAKDOWN_DEFAULT = {"org": "completeness"}
+# 기본 적용을 끄는 명시값 — 응답 크기를 줄여야 하는 소비자용(limit이 클 때 유효).
+# 이 값을 아는 클라이언트만 쓰므로 기존 연결에는 영향이 없다.
+_STATS_BREAKDOWN_NONE = "none"
 _CHANGE_STATUSES = (
     "ADDED", "MODIFIED", "MISSING_FROM_SNAPSHOT", "REAPPEARED",
     "POSSIBLE_IDENTITY_CHANGE", "OFFICIALLY_WITHDRAWN",
@@ -875,7 +883,8 @@ class Service:
         if axis not in _STATS_AXES:
             raise InvalidArgument(f"axis는 {_STATS_AXES} 중 하나", {"axis": axis})
         # v1.8 additive: 제한적 교차 집계 — 허용 조합 밖은 상태로 알린다(미지원 ≠ 0건)
-        if breakdown and breakdown not in _STATS_BREAKDOWNS.get(axis, ()):
+        if (breakdown and breakdown != _STATS_BREAKDOWN_NONE
+                and breakdown not in _STATS_BREAKDOWNS.get(axis, ())):
             raise FilterNotAvailable(
                 f"breakdown은 축별 허용 조합만 지원: {_STATS_BREAKDOWNS}",
                 {"axis": axis, "breakdown": breakdown},
@@ -889,11 +898,13 @@ class Service:
                 (limit,),
             ).fetchall()
             data = {"axis": axis, "buckets": [{"key": r["k"], "count": r["n"]} for r in rows]}
-            if breakdown:
+            applied = (None if breakdown == _STATS_BREAKDOWN_NONE
+                       else breakdown or _STATS_BREAKDOWN_DEFAULT.get(axis))
+            if applied:
                 for b in data["buckets"]:
-                    b["breakdown"] = self._stats_breakdown(key_col, b["key"], breakdown)
-                data["breakdown"] = breakdown
-                if breakdown == "completeness":
+                    b["breakdown"] = self._stats_breakdown(key_col, b["key"], applied)
+                data["breakdown"] = applied
+                if applied == "completeness":
                     rules = list(RULE_COMPLETENESS.values())
                     data["note"] = ("완전성 평균은 목록유형 프로파일별 산출(FILE/API/STD 분모 상이) — "
                                     "프로파일 간 합산·직접 비교는 금지.")
