@@ -31,17 +31,29 @@ async function get(path, params) {
 }
 
 // 오류 모델 언랩 — HTTP 상태 코드 원문을 사용자에게 노출하지 않는다(P0).
-// 서버 오류 봉투(error.message)가 있으면 그 문안을, 없으면(구버전 서버·라우트 부재 등)
-// 사용자 언어의 폴백을 쓴다. 프로그램 분기는 err.code/err.status로 한다.
+// 서버 오류 봉투(error.message)가 있으면 그 문안을(원문 그대로, 불변식 4), 없으면(구버전
+// 서버·라우트 부재 등) 사용자 언어의 폴백을 쓴다. 프로그램 분기는 err.code/err.status로 한다.
+// 폴백 문안의 언어는 문서 언어(<html lang> — i18n.jsx가 설정)를 따른다. React 밖이라 훅을 못 쓴다.
+const FALLBACK_ERROR = {
+  ko: {
+    notProvided: '이 기능을 서버가 아직 제공하지 않습니다 — 서버가 이전 버전일 수 있습니다. 키워드·컬럼 탐색은 계속 사용할 수 있습니다.',
+    failed: (status) => `요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요. (오류 코드 ${status})`,
+  },
+  en: {
+    notProvided: 'The server does not provide this feature yet — it may be running an older version. Keyword and column search remain available.',
+    failed: (status) => `The request could not be processed. Please try again shortly. (error code ${status})`,
+  },
+}
+const uiLang = () => (document.documentElement.lang === 'en' ? 'en' : 'ko')
+
 async function unwrap(res) {
   let body = null
   try { body = await res.json() } catch { body = null }
   if (!res.ok) {
+    const fb = FALLBACK_ERROR[uiLang()]
     const err = new Error(
       body?.error?.message
-      || (res.status === 404
-        ? '이 기능을 서버가 아직 제공하지 않습니다 — 서버가 이전 버전일 수 있습니다. 키워드·컬럼 탐색은 계속 사용할 수 있습니다.'
-        : `요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요. (오류 코드 ${res.status})`),
+      || (res.status === 404 ? fb.notProvided : fb.failed(res.status)),
     )
     err.code = body?.error?.code
     err.status = res.status

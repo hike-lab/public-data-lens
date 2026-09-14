@@ -1,16 +1,17 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api.js'
-import { CHANGE_STATUS_LABEL, CHANGE_STATUS_NOTE } from '../labels.js'
+import { useLang } from '../i18n.jsx'
 import WarningPanel from './WarningPanel.jsx'
 import { rowButtonProps } from '../a11y.js'
 
-const STATUSES = [['', '전체'], ...Object.entries(CHANGE_STATUS_LABEL)]
-
 export default function ChangesView({ onOpen }) {
+  const { t, L } = useLang()
   const [status, setStatus] = useState('')
   const [body, setBody] = useState(null)
   const [items, setItems] = useState([])
   const [error, setError] = useState(null)
+
+  const statuses = [['', t('changes.all')], ...Object.entries(L.CHANGE_STATUS_LABEL)]
 
   const load = (cursor = null, st = status) => {
     api
@@ -31,11 +32,11 @@ export default function ChangesView({ onOpen }) {
     <section>
       <div className="filters">
         <select value={status} onChange={(e) => setStatus(e.target.value)}>
-          {STATUSES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+          {statuses.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
         </select>
         {body?.data.baseSnapshot && (
           <span className="result-meta">
-            비교 기준: {body.data.baseSnapshot} → {body.data.currentSnapshot}
+            {t('changes.base', { b: body.data.baseSnapshot, c: body.data.currentSnapshot })}
           </span>
         )}
       </div>
@@ -46,9 +47,9 @@ export default function ChangesView({ onOpen }) {
       {/* v1.6: 상태별 집계 — 무엇이 얼마나 바뀌었는지 한 줄 요약 */}
       {body?.data?.summary && Object.keys(body.data.summary).length > 0 && (
         <p className="result-meta">
-          이번 스냅샷에서 확인된 변경:{' '}
+          {t('changes.summary')}
           {Object.entries(body.data.summary)
-            .map(([s, n]) => `${CHANGE_STATUS_LABEL[s] || s} ${n.toLocaleString()}건`)
+            .map(([s, n]) => t('changes.count', { label: L.CHANGE_STATUS_LABEL[s] || s, n: n.toLocaleString() }))
             .join(' · ')}
         </p>
       )}
@@ -57,7 +58,7 @@ export default function ChangesView({ onOpen }) {
       {body && body.data.totalEstimate === 0
         && !(body.data.baseUnavailableReason
           ?? body.warnings.some((w) => w.includes('이전 스냅샷'))) && (
-        <p className="empty">해당 상태의 변경이 없습니다.</p>
+        <p className="empty">{t('changes.empty')}</p>
       )}
 
       <ul className="results">
@@ -65,14 +66,14 @@ export default function ChangesView({ onOpen }) {
           <li key={`${c.status}-${c.recordId}`} className="result-row">
             <div className="row-main" {...rowButtonProps(() => onOpen(c.recordId))}>
               <div className="row-title">
-                <span className={`change-status s-${c.status}`} title={CHANGE_STATUS_NOTE[c.status] || ''}>
-                  {CHANGE_STATUS_LABEL[c.status] || c.status}
+                <span className={`change-status s-${c.status}`} title={L.CHANGE_STATUS_NOTE[c.status] || ''}>
+                  {L.CHANGE_STATUS_LABEL[c.status] || c.status}
                 </span>
                 <strong>{c.title}</strong>
               </div>
               <div className="row-sub">
                 <span>{c.orgName}</span>
-                {c.changedFields && <span>변경 필드: {c.changedFields.join(', ')}</span>}
+                {c.changedFields && <span>{t('changes.fields', { f: c.changedFields.join(', ') })}</span>}
               </div>
             </div>
           </li>
@@ -80,7 +81,7 @@ export default function ChangesView({ onOpen }) {
       </ul>
 
       {body?.data.hasMore && (
-        <button className="more" onClick={() => load(body.data.nextCursor)}>더 보기</button>
+        <button className="more" onClick={() => load(body.data.nextCursor)}>{t('changes.more')}</button>
       )}
     </section>
   )
