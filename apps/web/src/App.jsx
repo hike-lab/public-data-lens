@@ -9,6 +9,7 @@ import AboutView from './components/AboutView.jsx'
 import ExploreView from './components/ExploreView.jsx'
 import ConnectView from './components/ConnectView.jsx'
 import ObservatoryView from './components/ObservatoryView.jsx'
+import { useLang, LANGS } from './i18n.jsx'
 
 // 배포 표면(빌드 시 결정): 'core' = MCP 배포 동반 웹(비생성형만),
 // 'concierge' = 별도 컨시어지 서비스(컨시어지 중심 + 보조 검색), 'all' = 로컬 개발 기본
@@ -29,17 +30,19 @@ document.documentElement.dataset.surface = SURFACE
 // 비교는 선택이 생겼을 때만 하단 컨텍스트 바로 등장한다.
 // '활용 사례'는 자동 생성 v0(인간 검토 전)이라 상용 표면에서 내렸다 — 검수 후 복귀.
 // 상단은 둘러보기·소개·MCP 연결(2026-08-04 결정) — 변경 이력은 푸터(라우트는 유지)
+// 라벨은 strings.*.jsx의 'nav.<id>' 키 — 표시 언어에 따라 바뀐다
 const NAV_LINKS = [
-  ...(HAS_CONCIERGE ? [{ id: 'concierge', label: 'AI 컨시어지' }] : []),
-  { id: 'explore', label: '둘러보기' },
-  { id: 'observatory', label: '관측 현황' },
-  { id: 'about', label: '소개' },
-  { id: 'connect', label: 'MCP 연결' },
+  ...(HAS_CONCIERGE ? [{ id: 'concierge' }] : []),
+  { id: 'explore' },
+  { id: 'observatory' },
+  { id: 'about' },
+  { id: 'connect' },
 ]
 
 export default function App() {
   // URL이 뷰 상태의 단일 진실: 뷰·프로필·렌즈·검색 조건이 전부 URL에 담긴다
   const [route, navigate] = useRoute()
+  const { lang, setLang, t } = useLang()
   // 프로필이 열려 있는 동안 밑판은 직전 뷰를 유지한다(변경 이력·컨시어지에서 열어도 화면 유지)
   const underlay = useRef('search')
   if (!route.profileId) underlay.current = route.view
@@ -105,19 +108,34 @@ export default function App() {
   return (
     <div className="app">
       <header className="topnav">
-        <button className="brand" onClick={goHome} aria-label="Public Data Lens 홈">
+        <button className="brand" onClick={goHome} aria-label={t('app.brandHome')}>
           <h1>Public Data Lens</h1>
         </button>
-        <nav className="nav-links" aria-label="보조 메뉴">
+        <nav className="nav-links" aria-label={t('app.navAria')}>
           {NAV_LINKS.map((l) => (
             <button
               key={l.id}
               className={view === l.id ? 'nav-link active' : 'nav-link'}
               onClick={() => goto(l.id)}
             >
-              {l.label}
+              {t(`nav.${l.id}`)}
             </button>
           ))}
+          {/* 표시 언어 전환 — 인터페이스 문안만 바뀐다. 서버 값(제목·기관·경고)은 원문 유지 */}
+          <div className="lang-switch" role="group" aria-label={t('lang.aria')}>
+            {LANGS.map((l) => (
+              <button
+                key={l}
+                type="button"
+                lang={l}
+                className={lang === l ? 'lang-opt on' : 'lang-opt'}
+                aria-pressed={lang === l}
+                onClick={() => setLang(l)}
+              >
+                {t(`lang.${l}`)}
+              </button>
+            ))}
+          </div>
         </nav>
       </header>
 
@@ -140,7 +158,7 @@ export default function App() {
         )}
         {view === 'compare' && (
           <>
-            <button className="back-link" onClick={() => goto('search')}>← 데이터 찾기로</button>
+            <button className="back-link" onClick={() => goto('search')}>{t('app.backToSearch')}</button>
             <CompareView
               ids={compareIds}
               onRemove={(id) => setCompareIds((p) => p.filter((x) => x !== id))}
@@ -180,17 +198,17 @@ export default function App() {
 
       {compareIds.length > 0 && view !== 'compare' && (
         <div className="compare-bar" role="status">
-          <span className="cb-count">{compareIds.length}개 선택</span>
-          <button className="cb-go" onClick={() => goto('compare')}>비교하기 →</button>
-          <button className="cb-clear" onClick={() => setCompareIds([])}>비우기</button>
+          <span className="cb-count">{t('app.selectedCount', { n: compareIds.length })}</span>
+          <button className="cb-go" onClick={() => goto('compare')}>{t('app.compareGo')}</button>
+          <button className="cb-clear" onClick={() => setCompareIds([])}>{t('app.compareClear')}</button>
         </div>
       )}
 
       {HAS_CONCIERGE && view !== 'concierge' && (
         <button
           className="frap"
-          title="AI 컨시어지"
-          aria-label="AI 컨시어지 열기"
+          title={t('nav.concierge')}
+          aria-label={t('app.conciergeOpen')}
           onClick={() => goto('concierge')}
         >
           AI
@@ -198,18 +216,14 @@ export default function App() {
       )}
 
       <footer className="footer">
-        <p>
-          이 서비스는 공공데이터포털의 목록 정보와 일부 실제 파일에서 확인한 구조 정보를
-          바탕으로 합니다. 실제 데이터의 내용과 품질, 다른 데이터와 함께 사용할 수 있는지는
-          보증하지 않습니다. 모든 데이터의 이용(다운로드·활용신청)은{' '}
-          <a href="https://www.data.go.kr" target="_blank" rel="noreferrer">공공데이터포털</a>에서
-          가능합니다.
-        </p>
+        <p>{t('app.footerDisclaimer')}</p>
+        {/* 영어 표면: 데이터 원문은 번역되지 않는다는 고지(한국어에서는 빈 문자열 → 생략) */}
+        {t('app.dataLangNote') && <p className="footer-lang-note">{t('app.dataLangNote')}</p>}
         <p>
           {/* IP·옵트아웃 상세는 링크된 개인정보·로그 안내가 정본 */}
           <a href="https://github.com/hike-lab/public-data-lens" target="_blank" rel="noreferrer">GitHub</a> ·{' '}
-          <button className="footer-link" onClick={() => goto('changes')}>변경 이력</button> ·{' '}
-          <a href="/api/resources/privacy" target="_blank" rel="noreferrer">개인정보·로그 안내</a>
+          <button className="footer-link" onClick={() => goto('changes')}>{t('app.footerChanges')}</button> ·{' '}
+          <a href="/api/resources/privacy" target="_blank" rel="noreferrer">{t('app.footerPrivacy')}</a>
         </p>
       </footer>
     </div>

@@ -4,19 +4,21 @@
 // 생성된 뒤부터 값이 생긴다 — 부재는 축적 단계라는 사실로 보여준다.
 import { useEffect, useState } from 'react'
 import { api } from '../api.js'
-import { LIST_TYPE_LABEL, FAMILY_REVIEW_LABEL, CHANGE_STATUS_LABEL } from '../labels.js'
+import { useLang } from '../i18n.jsx'
 
 function Bars({ buckets, max, renderExtra }) {
+  const { t } = useLang()
   const top = max || (buckets[0]?.count ?? 1)
   return (
     <ul className="obs-bars">
       {buckets.map((b) => (
-        <li key={b.key ?? '(미기재)'}>
-          <span className="obs-key">{b.key ?? '(미기재)'}</span>
+        <li key={b.key ?? '(null)'}>
+          {/* 버킷 키는 서버 값(주제명·기관명은 한국어 원문) — null만 '미기재'로 표기 */}
+          <span className="obs-key">{b.key ?? t('obs.unspecified')}</span>
           <span className="obs-track" aria-hidden="true">
             <span className="obs-fill" style={{ width: `${Math.max(2, (b.count / top) * 100)}%` }} />
           </span>
-          <span className="obs-count">{b.count.toLocaleString()}건</span>
+          <span className="obs-count">{t('obs.count', { n: b.count.toLocaleString() })}</span>
           {renderExtra && <span className="obs-extra">{renderExtra(b)}</span>}
         </li>
       ))}
@@ -25,6 +27,7 @@ function Bars({ buckets, max, renderExtra }) {
 }
 
 export default function ObservatoryView({ status }) {
+  const { t, L } = useLang()
   const [data, setData] = useState(null)
   const [error, setError] = useState(null)
 
@@ -38,7 +41,7 @@ export default function ObservatoryView({ status }) {
       api.changes({ pageSize: 1 }),
     ]).then((rs) => {
       if (rs.every((r) => r.status === 'rejected')) {
-        setError(rs[0].reason?.message || '관측 현황을 불러오지 못했습니다.')
+        setError(rs[0].reason?.message || t('obs.loadFail'))
         return
       }
       const [listType, completeness, theme, orgs, family, changes] = rs.map(
@@ -46,10 +49,11 @@ export default function ObservatoryView({ status }) {
       )
       setData({ listType, completeness, theme, orgs, family, changes })
     })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   if (error) return <p className="error">{error}</p>
-  if (!data) return <p className="loading">불러오는 중…</p>
+  if (!data) return <p className="loading">{t('common.loading')}</p>
 
   const snapshot = status?.data?.currentSnapshot
   const counts = status?.data?.counts
@@ -58,100 +62,90 @@ export default function ObservatoryView({ status }) {
 
   return (
     <section className="observatory">
-      <h2 className="explore-title">관측 현황{snapshot && <> — {snapshot} 스냅샷</>}</h2>
-      <p className="result-meta">
-        이 페이지는 현재 스냅샷에서 확인된 사실을 보여줍니다. 평가하거나 순위를 매기는 것이
-        아니라, 무엇을 확인했고 무엇을 아직 확인하지 못했는지를 구분합니다. 모든 수치에는
-        적용한 규칙과 버전이 기록됩니다.
-      </p>
+      <h2 className="explore-title">{t('obs.title')}{snapshot && t('obs.titleSnapshot', { s: snapshot })}</h2>
+      <p className="result-meta">{t('obs.intro')}</p>
 
       <div className="home-block">
-        <h3>데이터 규모와 제공 유형</h3>
+        <h3>{t('obs.sizeTitle')}</h3>
         {counts && (
-          <p className="result-meta">공공데이터포털의 목록 {counts.datasets.toLocaleString()}건이 반영되어 있습니다.</p>
+          <p className="result-meta">{t('obs.sizeIntro', { n: counts.datasets.toLocaleString() })}</p>
         )}
         {listType ? (
-          <Bars buckets={listType.buckets.map((b) => ({ ...b, key: LIST_TYPE_LABEL[b.key] || b.key }))} />
-        ) : <p className="result-meta">유형 분포를 불러오지 못했습니다.</p>}
+          <Bars buckets={listType.buckets.map((b) => ({ ...b, key: L.LIST_TYPE_LABEL[b.key] || b.key }))} />
+        ) : <p className="result-meta">{t('obs.typeFail')}</p>}
       </div>
 
       <div className="home-block">
-        <h3>실제 파일 구조 확인 현황</h3>
+        <h3>{t('obs.structTitle')}</h3>
         {coverage ? (
           <>
             <p className="obs-figure">
-              파일로 제공되는 {coverage.fileRecordsTotal.toLocaleString()}건 가운데{' '}
-              <strong>{coverage.recordsAvailable.toLocaleString()}건</strong>은 실제 컬럼 구조를
-              확인했습니다.
+              {t('obs.structFigure', {
+                total: coverage.fileRecordsTotal.toLocaleString(),
+                n: coverage.recordsAvailable.toLocaleString(),
+              })}
             </p>
-            <p className="result-meta">
-              아직 확인하지 못한 목록은 수집 대기 상태입니다. 데이터 품질이 낮다는 뜻은 아닙니다.
-            </p>
+            <p className="result-meta">{t('obs.structNote')}</p>
           </>
-        ) : <p className="result-meta">현재 서비스 버전에서는 실제 파일 구조를 확인한 범위를 제공하지 않습니다.</p>}
+        ) : <p className="result-meta">{t('obs.structUnavailable')}</p>}
       </div>
 
       <div className="home-block">
-        <h3>목록 정보 기재 현황 — 제공 유형별</h3>
-        <p className="result-meta">
-          파일·API·표준데이터는 확인하는 항목 수가 서로 다릅니다. 따라서 같은 유형 안에서만
-          산출하며, 유형 간 수치를 합치거나 직접 비교하지 않습니다.
-        </p>
+        <h3>{t('obs.complTitle')}</h3>
+        <p className="result-meta">{t('obs.complIntro')}</p>
         {completeness ? (
           <ul className="obs-profiles">
             {completeness.profiles.map((p) => (
               <li key={p.profile}>
-                <strong>{LIST_TYPE_LABEL[p.profile] || p.profile}</strong>
+                <strong>{L.LIST_TYPE_LABEL[p.profile] || p.profile}</strong>
                 <span className="obs-count">
-                  {p.average !== null ? `평균 기재율 ${(p.average * 100).toFixed(1)}%` : '산출 대상 없음'}
+                  {p.average !== null ? t('obs.avgRate', { p: (p.average * 100).toFixed(1) }) : t('obs.noTarget')}
                 </span>
               </li>
             ))}
           </ul>
-        ) : <p className="result-meta">완전성 분포를 불러오지 못했습니다.</p>}
+        ) : <p className="result-meta">{t('obs.complFail')}</p>}
       </div>
 
       <div className="home-block">
-        <h3>주제별 분포 — 목록 수 상위 {theme ? theme.buckets.length : 0}개</h3>
-        {theme ? <Bars buckets={theme.buckets} /> : <p className="result-meta">주제 분포를 불러오지 못했습니다.</p>}
+        <h3>{t('obs.themeTitle', { n: theme ? theme.buckets.length : 0 })}</h3>
+        {theme ? <Bars buckets={theme.buckets} /> : <p className="result-meta">{t('obs.themeFail')}</p>}
       </div>
 
       <div className="home-block">
-        <h3>제공 기관별 분포 — 목록 수 상위 {orgs ? orgs.buckets.length : 0}개 기관</h3>
-        <p className="result-meta">목록 수는 기관의 데이터 개방 규모를 보여줄 뿐, 데이터 품질 순위는 아닙니다.</p>
+        <h3>{t('obs.orgTitle', { n: orgs ? orgs.buckets.length : 0 })}</h3>
+        <p className="result-meta">{t('obs.orgNote')}</p>
         {orgs ? (
           <Bars
             buckets={orgs.buckets}
             renderExtra={(b) =>
               b.breakdown
                 ? Object.entries(b.breakdown)
-                    .map(([k, n]) => `${LIST_TYPE_LABEL[k] || k} ${n.toLocaleString()}`)
+                    .map(([k, n]) => `${L.LIST_TYPE_LABEL[k] || k} ${n.toLocaleString()}`)
                     .join(' · ')
                 : null}
           />
-        ) : <p className="result-meta">기관 분포를 불러오지 못했습니다.</p>}
+        ) : <p className="result-meta">{t('obs.orgFail')}</p>}
       </div>
 
       <div className="home-block">
-        <h3>같은 계열로 보이는 데이터</h3>
+        <h3>{t('obs.familyTitle')}</h3>
         {!family ? (
-          <p className="result-meta">계열 통계를 불러오지 못했습니다.</p>
+          <p className="result-meta">{t('obs.familyFail')}</p>
         ) : family.available === false ? (
-          <p className="result-meta">
-            현재 서비스 버전에서는 같은 계열로 보이는 데이터 후보를 아직 산출하지 않았습니다.
-            후보가 0건이라는 뜻은 아닙니다.
-          </p>
+          <p className="result-meta">{t('obs.familyUnavailable')}</p>
         ) : (
           <>
             <p className="obs-figure">
-              같은 계열로 보이는 후보 묶음 {family.familyCandidates.families.toLocaleString()}개
-              (목록 {family.familyCandidates.memberRecords.toLocaleString()}건)를 자동으로
-              찾았습니다.
+              {t('obs.familyFigure', {
+                f: family.familyCandidates.families.toLocaleString(),
+                m: family.familyCandidates.memberRecords.toLocaleString(),
+              })}
             </p>
             <p className="result-meta">
-              자동으로 찾은 후보이며, 같은 계열로 확정한 것은 아닙니다.{' '}
+              {t('obs.familyNote')}
               {Object.entries(family.familyCandidates.byReviewStatus || {})
-                .map(([k, n]) => `${FAMILY_REVIEW_LABEL[k] || k} ${n.toLocaleString()}건`)
+                .map(([k, n]) => t('obs.familyStatus', { label: L.FAMILY_REVIEW_LABEL[k] || k, n: n.toLocaleString() }))
                 .join(' · ')}
             </p>
           </>
@@ -159,34 +153,27 @@ export default function ObservatoryView({ status }) {
       </div>
 
       <div className="home-block">
-        <h3>월별 변경 현황</h3>
+        <h3>{t('obs.changesTitle')}</h3>
         {!changes ? (
-          <p className="result-meta">변경 통계를 불러오지 못했습니다.</p>
+          <p className="result-meta">{t('obs.changesFail')}</p>
         ) : changes.baseSnapshot === null ? (
-          <p className="result-meta">
-            월간 스냅샷이 두 개 이상 쌓이면 신규·변경·미관측 통계를 제공합니다. 현재는 첫
-            스냅샷을 축적하는 단계입니다.
-          </p>
+          <p className="result-meta">{t('obs.changesAccumulating')}</p>
         ) : (
           <>
             <p className="obs-figure">
-              {changes.baseSnapshot}부터 {changes.currentSnapshot}까지 확인된 변경입니다.
+              {t('obs.changesFigure', { base: changes.baseSnapshot, cur: changes.currentSnapshot })}
             </p>
             {changes.summary && (
               <ul className="obs-profiles">
                 {Object.entries(changes.summary).map(([k, n]) => (
                   <li key={k}>
-                    <strong>{CHANGE_STATUS_LABEL[k] || k}</strong>
-                    <span className="obs-count">{n.toLocaleString()}건</span>
+                    <strong>{L.CHANGE_STATUS_LABEL[k] || k}</strong>
+                    <span className="obs-count">{t('obs.count', { n: n.toLocaleString() })}</span>
                   </li>
                 ))}
               </ul>
             )}
-            <p className="result-meta">
-              ‘스냅샷에서 확인되지 않음(MISSING_FROM_SNAPSHOT)’은 데이터가 폐기되었다는 뜻이
-              아닙니다. 공식적으로 폐기된 경우에만 ‘공식 폐기(OFFICIALLY_WITHDRAWN)’로
-              표시합니다.
-            </p>
+            <p className="result-meta">{t('obs.changesNote')}</p>
           </>
         )}
       </div>

@@ -1,6 +1,7 @@
 // 홈 하단 블록(가이드 §3) — 전부 기존 응답으로 채운다. 표에 없는 데이터를 가정하지 않는다.
 import { useEffect, useState } from 'react'
 import { api } from '../api.js'
+import { useLang } from '../i18n.jsx'
 import CoverageIndicator from './CoverageIndicator.jsx'
 import EvidenceRow from './EvidenceRow.jsx'
 
@@ -8,45 +9,35 @@ const pct = (a, b) => (b ? ((a / b) * 100).toFixed(1) : null)
 
 // §3 #3 탐색 예시 — 결과가 아니라 과정을 보여준다. /api/plan(결정론 조립기)의 실제
 // 응답을 축약 서사로 렌더한다: 목적 해석 → 후보 → 한계 → 다음 확인. 날조 없음.
-const STORY_PURPOSE = '어린이 보호구역 교통안전을 분석하고 싶다'
-
+// 목적 문장(q)은 한국어 카탈로그를 조회하므로 언어와 무관하게 같다 — 표시 문안(label)만 바뀐다.
 export function ExplorationStoryBlock({ onTryPurpose }) {
+  const { t } = useLang()
+  const story = t('home.storyPurpose')
   const [body, setBody] = useState(null)
   useEffect(() => {
-    api.plan(STORY_PURPOSE, undefined, 3).then(setBody).catch(() => setBody(null))
-  }, [])
+    api.plan(story.q, undefined, 3).then(setBody).catch(() => setBody(null))
+  }, [story.q])
   const plan = body?.data
   if (!plan) return null
   return (
     <section className="home-block story-block">
-      <h3>이렇게 탐색합니다</h3>
-      <p className="story-purpose">“{STORY_PURPOSE}”</p>
+      <h3>{t('home.storyTitle')}</h3>
+      <p className="story-purpose">“{story.label}”</p>
       <ol className="story-steps">
         <li>
-          <strong>목적 파악</strong> — 질문에서 {plan.interpretedPurpose.searchTerms.map((t) => `‘${t}’`).join(', ')}을 핵심어로 찾습니다
-          {plan.interpretedPurpose.regionApplied && <> · 지역 {plan.interpretedPurpose.regionApplied}(문장에서 추출)</>}
+          {t('home.step1', {
+            terms: plan.interpretedPurpose.searchTerms.map((x) => `‘${x}’`).join(', '),
+            region: plan.interpretedPurpose.regionApplied,
+          })}
         </li>
-        <li>
-          <strong>후보 찾기</strong> — {plan.recommendedDatasets.map((c) => c.title).join(' · ')}
-        </li>
-        <li>
-          <strong>예상 역할과 선정 근거</strong> — 각 데이터가 분석에서 어떤 역할을 할 수
-          있는지와 후보로 선정된 근거를 보여줍니다. 여러 정보를 하나의 점수로 합쳐 순위를
-          매기지는 않습니다.
-        </li>
-        <li>
-          <strong>한계 확인</strong> — {plan.nextChecks[0]}
-        </li>
+        <li>{t('home.step2', { titles: plan.recommendedDatasets.map((c) => c.title).join(' · ') })}</li>
+        <li>{t('home.step3')}</li>
+        <li>{t('home.step4', { check: plan.nextChecks[0] })}</li>
       </ol>
-      <p className="story-note">
-        이 결과는 생성형 AI가 작성한 답변이 아닙니다. 정해진 규칙(<code>plan-assembly-v1.0</code>)에
-        따라 만들어지며, 같은 데이터와 같은 입력에는 같은 결과를 제공합니다. 데이터 품질을
-        판정한 결과가 아니므로(<code>NOT_ASSESSED</code>), 실제 활용 전에 검토가 필요한
-        초안(<code>DRAFT</code>)입니다.
-      </p>
+      <p className="story-note">{t('home.storyNote')}</p>
       {onTryPurpose && (
-        <button type="button" className="link story-cta" onClick={() => onTryPurpose(STORY_PURPOSE)}>
-          내 목적에 맞는 데이터 찾기 →
+        <button type="button" className="link story-cta" onClick={() => onTryPurpose(story.q)}>
+          {t('home.storyCta')}
         </button>
       )}
     </section>
@@ -56,6 +47,7 @@ export function ExplorationStoryBlock({ onTryPurpose }) {
 // §3 #5 Dataset anatomy — 구조 관측이 있는 실제 레코드 1건을 해부해 보여준다.
 // 원본 컬럼명은 그대로(§5.3), 예시값 정책·관측 출처도 함께.
 export function AnatomyBlock({ items, onOpen }) {
+  const { t } = useLang()
   const target = items?.find((it) => it.structureAvailable)
   const [body, setBody] = useState(null)
   useEffect(() => {
@@ -67,7 +59,7 @@ export function AnatomyBlock({ items, onOpen }) {
   if (!target || !table) return null
   return (
     <section className="home-block anatomy-block">
-      <h3>데이터셋은 이렇게 읽힙니다</h3>
+      <h3>{t('home.anatomyTitle')}</h3>
       <div className="anatomy-head">
         <strong>{target.title}</strong>
         <span className="obs-meta">{target.orgName}</span>
@@ -81,7 +73,7 @@ export function AnatomyBlock({ items, onOpen }) {
       <div className="table-scroll" tabIndex={0}>
         <table className="structure-table">
           <thead>
-            <tr><th>원본 컬럼명</th><th>관측 유형</th><th>고유값</th></tr>
+            <tr><th>{t('profile.th.source')}</th><th>{t('profile.th.type')}</th><th>{t('profile.th.distinct')}</th></tr>
           </thead>
           <tbody>
             {table.columns.slice(0, 5).map((c) => (
@@ -96,7 +88,7 @@ export function AnatomyBlock({ items, onOpen }) {
       </div>
       <EvidenceRow className="obs-meta" observation={st.assets[0].observation} />
       <button type="button" className="link" onClick={() => onOpen?.(target.recordId)}>
-        전체 구조·근거 보기 →
+        {t('home.anatomyCta')}
       </button>
     </section>
   )
@@ -104,6 +96,7 @@ export function AnatomyBlock({ items, onOpen }) {
 
 // §3.1 Coverage — 세 숫자를 함께(분모 규칙), 스냅샷 지연을 숨기지 않는다(§2 원칙 5)
 export function CoverageBlock({ status }) {
+  const { t } = useLang()
   const d = status?.data
   if (!d?.structureCoverage) return null
   const { recordsAvailable, fileRecordsTotal } = d.structureCoverage
@@ -114,30 +107,28 @@ export function CoverageBlock({ status }) {
     : null)
   return (
     <section className="home-block">
-      <h3>구조 관측 커버리지</h3>
+      <h3>{t('home.covTitle')}</h3>
       <div className="cov-figures">
         <div className="cov-fig">
           <strong>{total.toLocaleString()}</strong>
-          <span>목록 전체</span>
+          <span>{t('home.covAll')}</span>
         </div>
         <div className="cov-fig">
           <strong>{fileRecordsTotal.toLocaleString()}</strong>
-          <span>FILE 유형</span>
+          <span>{t('home.covFile')}</span>
         </div>
         <div className="cov-fig">
           <strong>{recordsAvailable.toLocaleString()}</strong>
-          <span>구조 관측 확보</span>
+          <span>{t('home.covObserved')}</span>
         </div>
       </div>
       <p className="cov-note">
-        구조 관측 확보분은 FILE의 {pct(recordsAvailable, fileRecordsTotal)}% ·
-        전체의 {pct(recordsAvailable, total)}%입니다. API·STD 유형은 아직 구조 관측
-        대상이 아닙니다(API_STRUCTURE_NOT_SUPPORTED_YET).
+        {t('home.covNote', { pf: pct(recordsAvailable, fileRecordsTotal), pa: pct(recordsAvailable, total) })}
       </p>
       <p className="cov-lag">
-        현재 스냅샷 {d.currentSnapshot} · 배포 {d.deployedAt?.slice(0, 10)}
-        {lagDays != null && <> — 스냅샷 기준월 시작으로부터 {lagDays}일 지연</>}
-        {' '}· 릴리스 <code>{d.release}</code>
+        {t('home.covLag', {
+          snapshot: d.currentSnapshot, deployed: d.deployedAt?.slice(0, 10), lag: lagDays, release: d.release,
+        })}
       </p>
     </section>
   )
@@ -145,7 +136,9 @@ export function CoverageBlock({ status }) {
 
 // §3.2 Open Infrastructure — 판정 규칙 레지스트리 전체(개수 하드코딩 금지).
 // 폐기 규칙(deprecated)은 숨기지 않고 표시한다 — 버전 관리의 증거.
+// 규칙 제목·정의(r.title·r.definition)는 서버 레지스트리 원문이며 번역하지 않는다.
 export function OpenInfraBlock() {
+  const { t } = useLang()
   const [registry, setRegistry] = useState(null)
   const [evalReport, setEvalReport] = useState(null)
   useEffect(() => {
@@ -154,48 +147,47 @@ export function OpenInfraBlock() {
     api.evalReport().then(setEvalReport).catch(() => setEvalReport(null))
   }, [])
   if (!registry?.rules) return null
+  const n = registry.rules.length
   return (
     <section className="home-block">
-      <h3>공개된 검색·비교 기준 — {registry.rules.length}개 규칙</h3>
-      <p className="infra-sub">
-        데이터를 찾고 비교할 때 적용하는 {registry.rules.length}개 규칙을 공개하고 있습니다.
-        각 결과에는 적용한 규칙과 버전이 기록되므로, 어떤 기준으로 결과가 만들어졌는지
-        확인하고 다시 검증할 수 있습니다.
-      </p>
+      <h3>{t('home.infraTitle', { n })}</h3>
+      <p className="infra-sub">{t('home.infraSub', { n })}</p>
       <ul className="rule-list">
         {registry.rules.map((r) => (
           <li key={r.ruleId} className={r.deprecated ? 'rule deprecated' : 'rule'}>
             <details>
               <summary>
                 <code>{r.ruleId}</code> {r.title}
-                {r.deprecated && <span className="rule-flag"> 폐기{r.supersededBy && ` → ${r.supersededBy}`}</span>}
+                {r.deprecated && <span className="rule-flag">{t('home.deprecated')}{r.supersededBy && ` → ${r.supersededBy}`}</span>}
               </summary>
               <p>{r.definition}</p>
-              {r.effectiveDate && <p className="rule-meta">시행일 {r.effectiveDate}</p>}
+              {r.effectiveDate && <p className="rule-meta">{t('home.effective', { d: r.effectiveDate })}</p>}
             </details>
           </li>
         ))}
       </ul>
       {evalReport?.summary && (
         <p className="eval-metrics">
-          검색 성능 참고값({evalReport.summary.queries}개 검색 질문으로 측정):
-          {' '}P@10 {evalReport.summary.meanPrecisionAt10}
-          {' '}· R@10 {evalReport.summary.meanRecallAt10}
-          {' '}· nDCG@10 {evalReport.summary.meanNdcgAt10}
+          {t('home.evalMetrics', {
+            q: evalReport.summary.queries,
+            p: evalReport.summary.meanPrecisionAt10,
+            r: evalReport.summary.meanRecallAt10,
+            n: evalReport.summary.meanNdcgAt10,
+          })}
           {!evalReport.summary.humanReviewed && (
-            <span className="rule-flag"> — 질문은 자동 생성되었으며 아직 사람이 검토하지 않은 결과입니다</span>
+            <span className="rule-flag">{t('home.evalUnreviewed')}</span>
           )}
-          {' '}· <a href="/api/resources/eval" target="_blank" rel="noreferrer">전체 리포트</a>
+          {' '}· <a href="/api/resources/eval" target="_blank" rel="noreferrer">{t('home.evalFull')}</a>
         </p>
       )}
       <p className="infra-links">
-        기술 자료:{' '}
-        <a href="/api/resources/rules" target="_blank" rel="noreferrer">규칙 레지스트리</a> ·{' '}
-        <a href="/api/resources/spec/tools" target="_blank" rel="noreferrer">도구 스키마</a> ·{' '}
-        <a href="/api/resources/context" target="_blank" rel="noreferrer">JSON-LD Context</a> ·{' '}
-        <a href="/api/resources/shapes" target="_blank" rel="noreferrer">SHACL</a> ·{' '}
-        <a href="/api/resources/prompts/build-data-plan" target="_blank" rel="noreferrer">예시 프롬프트</a> ·{' '}
-        <a href="/api/resources/privacy" target="_blank" rel="noreferrer">개인정보·로그 안내</a>
+        {t('home.techDocs')}{' '}
+        <a href="/api/resources/rules" target="_blank" rel="noreferrer">{t('home.linkRules')}</a> ·{' '}
+        <a href="/api/resources/spec/tools" target="_blank" rel="noreferrer">{t('home.linkSchema')}</a> ·{' '}
+        <a href="/api/resources/context" target="_blank" rel="noreferrer">{t('home.linkContext')}</a> ·{' '}
+        <a href="/api/resources/shapes" target="_blank" rel="noreferrer">{t('home.linkShapes')}</a> ·{' '}
+        <a href="/api/resources/prompts/build-data-plan" target="_blank" rel="noreferrer">{t('home.linkPrompt')}</a> ·{' '}
+        <a href="/api/resources/privacy" target="_blank" rel="noreferrer">{t('home.linkPrivacy')}</a>
       </p>
     </section>
   )

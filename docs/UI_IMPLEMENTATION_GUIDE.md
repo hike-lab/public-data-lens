@@ -61,6 +61,40 @@
 `license`는 계약에 열린 집합으로 정의되어 있다(`NO_RESTRICTION|KOGL_BY|… 등`). 여기만
 폴백 라벨(`기타(원문 확인)`)을 허용하고, 나머지는 전부 닫힌 집합으로 취급한다.
 
+## 2.1a 표시 언어 — 한국어·영어 (2026-09-15)
+
+인터페이스는 한국어(정본)·영어 두 표시 언어를 제공한다. 전환은 상단 내비의 언어 세그먼트,
+선호는 `localStorage`(`datanav-lang`)에 저장하며 초기값은 저장값 → 브라우저 언어(`ko*`면 ko,
+아니면 en) → ko 순이다. 언어는 뷰 상태가 아니라 이용자 선호이므로 URL에 담지 않는다.
+
+```
+apps/web/src/i18n.jsx          LangProvider · useLang() → { lang, setLang, t, L }
+apps/web/src/strings.ko.jsx    인터페이스 문안(정본). 키 = 'component.name'
+apps/web/src/strings.en.jsx    같은 키 집합의 영어 문안
+apps/web/src/labels.js         라벨 레지스트리(한국어 정본, §2.1)
+apps/web/src/labels.en.js      같은 export 이름의 영어 라벨
+apps/web/src/i18n.test.js      두 사전·두 레지스트리의 키 동일성, 회피 어휘(§8) 검사
+scripts/check-labels.mjs       두 라벨 파일 모두 계약 enum과 대조
+```
+
+규칙:
+
+- **컴포넌트는 문자열 리터럴을 두지 않는다.** 문안은 `t('key', vars)`, 계약 코드의 라벨은
+  `L.<TABLE>[code]`로 읽는다. `L`은 현재 언어의 `labels.*` 모듈이며 export 이름이 같다.
+- **서버 값은 어느 언어에서도 번역하지 않는다** — 데이터셋 제목·기관명·설명·`warnings[]`·
+  `notices[]`·규칙 제목/정의·지역명(`region.name`)·계획 조립 문장(`whySelected`·`nextChecks`).
+  영어 표면은 "한국어 카탈로그를 영어 인터페이스로 본다"이며, 이 사실을 푸터
+  (`app.dataLangNote`)와 검색 힌트(`search.hintLang`)가 명시한다.
+- **예시 질의는 두 언어에서 같다.** 카탈로그가 한국어라 `q`는 고정하고 칩 문안(`label`)에만
+  영어 설명을 덧붙인다. 목적 서사 블록의 질의(`home.storyPurpose.q`)도 같다.
+- 사전 값은 문자열(`{name}` 자리 채움), 함수(어순·조건·JSX 조각), 배열·객체 중 하나. 누락 키는
+  한국어로 폴백하되 `i18n.test.js`가 누락을 빌드 전에 잡는다.
+- 영어 어휘는 DESIGN §8을 따른다 — candidate / observed / confirmed / metadata / file observation.
+  recommended · guaranteed · AI-ready · suitable · optimal · best 는 테스트가 거부한다.
+- `api.js`의 폴백 오류 문안은 `<html lang>`을 따른다(React 밖). 서버 오류 봉투 문안은 원문.
+- `index.html`의 정적 본문(ADR-012, 크롤러용)은 한국어 그대로 둔다 — `document.title`과
+  `<html lang>`만 런타임에 바뀐다.
+
 ## 2.2 근거 수준 — `evidenceLevel` (2종)
 
 | 코드 | 라벨 | 의미 | 색 |
@@ -635,6 +669,7 @@ WCAG 2.1 AA. **DoD 항목이며 마지막 Phase로 미루지 않는다.**
 - 화면의 모든 상태·근거 표시가 응답 필드에서 직접 온다
 - 프론트엔드에 새로운 점수·임계값·판정이 없다
 - 계약 enum 전체에 라벨이 정의되어 있고, 빌드 가드가 누락을 잡는다
+- 두 표시 언어(ko·en)의 문안·라벨 키 집합이 같고, 서버 값은 어느 언어에서도 원문이다(§2.1a)
 - 서버 경고 문안이 치환되지 않는다
 - `api.js`의 8개 메서드 시그니처가 유지된다
 - 모든 데이터 호출이 `api.js`를 경유한다 (raw `fetch` 금지)

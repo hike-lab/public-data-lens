@@ -1,28 +1,24 @@
 import { useEffect, useRef, useState } from 'react'
 import { api } from '../api.js'
-
-import { exampleStatusLabel, COMPLETENESS_FIELD_LABEL, FRESHNESS_LABEL, EVIDENCE_LABEL } from '../labels.js'
+import { useLang } from '../i18n.jsx'
 import WarningPanel from './WarningPanel.jsx'
 import EvidenceRow from './EvidenceRow.jsx'
 import CoverageIndicator from './CoverageIndicator.jsx'
 import PossibleUsesLens from './PossibleUsesLens.jsx'
 
 /* 상세 = 렌즈 5종(§5.1). 기술 표현(정규화·원본·JSON-LD)은 접힘 격리였다가
-   2026-08-04 '원본 데이터' 렌즈로 승격 — 한 번의 클릭으로 도달하게 한다. */
-const LENSES = [
-  ['overview', '개요'],
-  ['structure', '데이터 구조'],
-  ['evidence', '근거'],
-  ['uses', '활용 초안'],
-  ['raw', '원본 데이터'],
-]
+   2026-08-04 '원본 데이터' 렌즈로 승격 — 한 번의 클릭으로 도달하게 한다.
+   라벨은 labels.js LENS_LABEL. */
+const LENS_IDS = ['overview', 'structure', 'evidence', 'uses', 'raw']
 
 export default function DatasetProfile({
   recordId, lens = 'overview', onLensChange, onClose, onOpen, planAvailable,
 }) {
+  const { t, L } = useLang()
   // v1.5 게이팅(P0): 구버전 서버에는 활용 초안 렌즈를 노출하지 않는다.
   // 딥링크(?lens=uses)는 시도를 허용하고 오류 문안으로 강등한다.
-  const lenses = planAvailable ? LENSES : LENSES.filter(([l]) => l !== 'uses')
+  const lenses = (planAvailable ? LENS_IDS : LENS_IDS.filter((l) => l !== 'uses'))
+    .map((l) => [l, L.LENS_LABEL[l]])
   const [cardBody, setCardBody] = useState(null)
   const [structBody, setStructBody] = useState(null)
   const [error, setError] = useState(null)
@@ -94,12 +90,12 @@ export default function DatasetProfile({
         ref={asideRef}
         role="dialog"
         aria-modal="true"
-        aria-label={ds ? `${ds.title} 상세` : '데이터셋 상세'}
+        aria-label={ds ? t('profile.aria', { title: ds.title }) : t('profile.ariaFallback')}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="drawer-head">
           <div className="drawer-nav">
-            <div className="drawer-tabs" role="tablist" aria-label="상세 렌즈">
+            <div className="drawer-tabs" role="tablist" aria-label={t('profile.lensAria')}>
               {lenses.map(([l, label], i) => (
                 <button
                   key={l}
@@ -119,15 +115,15 @@ export default function DatasetProfile({
                 라벨은 목록 행과 동일('포털 원문') — '원본 데이터' 렌즈와 구분한다 */}
             {ds?.portalUrl && (
               <a className="tab tab-link" href={ds.portalUrl} target="_blank" rel="noreferrer">
-                포털 원문 ↗
+                {t('profile.portalTab')}
               </a>
             )}
           </div>
-          <button className="close" onClick={onClose} aria-label="상세 닫기">✕</button>
+          <button className="close" onClick={onClose} aria-label={t('profile.close')}>✕</button>
         </div>
 
         {error && <p className="error">{error}</p>}
-        {!body && !error && <p className="loading">불러오는 중…</p>}
+        {!body && !error && <p className="loading">{t('common.loading')}</p>}
 
         {activeLens !== 'uses' && <WarningPanel warnings={body?.warnings} notices={body?.notices} />}
 
@@ -139,9 +135,7 @@ export default function DatasetProfile({
 
         {/* 판정 스냅샷은 L1에 유지(신뢰 신호), 규칙 버전 원문은 근거 렌즈로 이동(P1) */}
         {body && (
-          <p className="drawer-meta">
-            판정 스냅샷 {body.meta.sourceSnapshot} — 상세 근거는 '근거' 렌즈에서
-          </p>
+          <p className="drawer-meta">{t('profile.meta', { s: body.meta.sourceSnapshot })}</p>
         )}
       </aside>
     </div>
@@ -149,7 +143,8 @@ export default function DatasetProfile({
 }
 
 function OverviewLens({ ds }) {
-  const fresh = FRESHNESS_LABEL[ds.freshness?.status] || FRESHNESS_LABEL.UNKNOWN
+  const { t, L } = useLang()
+  const fresh = L.FRESHNESS_LABEL[ds.freshness?.status] || L.FRESHNESS_LABEL.UNKNOWN
   return (
     <div className="profile">
       <h2>
@@ -158,34 +153,34 @@ function OverviewLens({ ds }) {
       <p className="org">{ds.orgName}</p>
 
       <div className="prop-grid">
-        <Prop k="분류" v={ds.theme?.top ? `${ds.theme.top}${ds.theme.sub ? ' › ' + ds.theme.sub : ''}` : '—'} />
-        <Prop k="제공 형식" v={ds.formats?.join(', ') || '—'} />
-        <Prop k="갱신 주기" v={ds.updateCycleRaw || '—'} />
-        <Prop k="이용 조건" v={ds.license?.raw || '—'} />
-        <Prop k="등록일" v={ds.createdDate || '—'} />
-        <Prop k="수정일" v={ds.modifiedDate || '—'} />
-        <Prop k="공간 범위" v={ds.spatial || '목록에 기재되지 않음'} />
-        <Prop k="시간 범위" v={ds.temporal || '목록에 기재되지 않음'} />
-        {ds.rowCount != null && <Prop k="전체 행" v={ds.rowCount.toLocaleString()} />}
-        {ds.apiType && <Prop k="API 유형" v={ds.apiType} />}
+        <Prop k={t('profile.k.theme')} v={ds.theme?.top ? `${ds.theme.top}${ds.theme.sub ? ' › ' + ds.theme.sub : ''}` : '—'} />
+        <Prop k={t('profile.k.formats')} v={ds.formats?.join(', ') || '—'} />
+        <Prop k={t('profile.k.cycle')} v={ds.updateCycleRaw || '—'} />
+        <Prop k={t('profile.k.license')} v={ds.license?.raw || '—'} />
+        <Prop k={t('profile.k.created')} v={ds.createdDate || '—'} />
+        <Prop k={t('profile.k.modified')} v={ds.modifiedDate || '—'} />
+        <Prop k={t('profile.k.spatial')} v={ds.spatial || t('profile.notListed')} />
+        <Prop k={t('profile.k.temporal')} v={ds.temporal || t('profile.notListed')} />
+        {ds.rowCount != null && <Prop k={t('profile.k.rows')} v={ds.rowCount.toLocaleString()} />}
+        {ds.apiType && <Prop k={t('profile.k.apiType')} v={ds.apiType} />}
       </div>
 
       <div className="judgments">
         <span
           className="completeness large"
-          title={`${ds.completeness.profile} 프로파일 · ${ds.completeness.rule}`}
+          title={t('profile.completenessTitle', { profile: ds.completeness.profile, rule: ds.completeness.rule })}
         >
-          메타데이터 {ds.completeness.totalFields}개 항목 중 {ds.completeness.filledFields}개 기재
+          {t('profile.filled', { total: ds.completeness.totalFields, filled: ds.completeness.filledFields })}
           <small>
-            {' '}({ds.completeness.profile} 유형 ·{' '}
-            {ds.completeness.typical
-              ? `같은 유형의 ${ds.completeness.typicalShare}%가 동일한 기재 수준`
-              : `같은 유형 중 상위 ${ds.completeness.topPercent}%`})
+            {t('profile.filledDetail', {
+              profile: ds.completeness.profile, typical: ds.completeness.typical,
+              share: ds.completeness.typicalShare, top: ds.completeness.topPercent,
+            })}
           </small>
         </span>
         <span className={`freshness ${fresh.cls}`} title={ds.freshness?.note || ''}>
           {fresh.text}
-          {ds.freshness?.ageDays != null && <small> · 수정 후 {ds.freshness.ageDays}일</small>}
+          {ds.freshness?.ageDays != null && <small>{t('profile.ageDays', { n: ds.freshness.ageDays })}</small>}
         </span>
       </div>
 
@@ -193,7 +188,7 @@ function OverviewLens({ ds }) {
         <div className="field-checklist">
           {Object.entries(ds.completeness.fields).map(([f, filled]) => (
             <span key={f} className={filled ? 'fc filled' : 'fc missing'}>
-              {filled ? '✓' : '—'} {COMPLETENESS_FIELD_LABEL[f] || f}
+              {filled ? '✓' : '—'} {L.COMPLETENESS_FIELD_LABEL[f] || f}
             </span>
           ))}
         </div>
@@ -201,7 +196,7 @@ function OverviewLens({ ds }) {
 
       {ds.description && (
         <>
-          <h3>데이터 설명 <small className="desc-src">(제공 기관 원문)</small></h3>
+          <h3>{t('profile.descTitle')} <small className="desc-src">{t('profile.descSrc')}</small></h3>
           {ds.description.length > 220 ? (
             /* 긴 원문은 접는다(P1) — 서비스가 요약을 생성하지는 않는다(§8 언어 규칙) */
             <details className="desc-fold">
@@ -215,25 +210,27 @@ function OverviewLens({ ds }) {
       )}
       {ds.dataLimits && (
         <>
-          <h3>데이터 한계 (기관 기재)</h3>
+          <h3>{t('profile.limitsTitle')}</h3>
           <p className="desc">{ds.dataLimits}</p>
         </>
       )}
       {ds.keywords?.length > 0 && (
         <div className="keywords">
-          <span className="examples-label">제공 기관이 등록한 키워드</span>
+          <span className="examples-label">{t('profile.keywordsLabel')}</span>
           {ds.keywords.map((k) => <span key={k} className="chip small">{k}</span>)}
         </div>
       )}
 
       <div className="portal-box">
         <p>
-          목록 ID <code>{ds.portal.listKey}</code> · 제공 기관 {ds.portal.orgName} · 목록 스냅샷{' '}
-          {ds.portal.listBaseDate} · 분석 기준일 {ds.portal.analyzedAt?.slice(0, 10)}
+          {t('profile.portalBox', {
+            listKey: ds.portal.listKey, org: ds.portal.orgName,
+            base: ds.portal.listBaseDate, analyzed: ds.portal.analyzedAt?.slice(0, 10),
+          })}
         </p>
         {ds.portal.listUrl && (
           <a className="portal-link" href={ds.portal.listUrl} target="_blank" rel="noreferrer">
-            공공데이터포털에서 원문 확인 ↗
+            {t('profile.portalLink')}
           </a>
         )}
         <EvidenceRow level={ds.evidenceLevel} />
@@ -244,41 +241,42 @@ function OverviewLens({ ds }) {
 
 /* 근거 렌즈(§5.4) — 신규 필드 없이 기존 값 조합. "판정이 있으면 근거가 있다"의 구현. */
 function EvidenceLens({ ds, meta }) {
+  const { t, L } = useLang()
   return (
     <div className="profile">
-      <h2>근거 — 이 카드의 판정이 어디서 왔는가</h2>
+      <h2>{t('profile.evTitle')}</h2>
       <EvidenceRow level={ds.evidenceLevel} snapshot={meta.sourceSnapshot} />
       <div className="prop-grid">
-        <Prop k="판정 스냅샷" v={`${meta.sourceSnapshot} (처리 ${meta.processedAt?.slice(0, 10)})`} />
-        <Prop k="스키마 버전" v={meta.schemaVersion} />
+        <Prop k={t('profile.k.snapshot')} v={t('profile.snapshotV', { s: meta.sourceSnapshot, p: meta.processedAt?.slice(0, 10) })} />
+        <Prop k={t('profile.k.schema')} v={meta.schemaVersion} />
       </div>
-      {ds.freshness?.note && <p className="obs-meta">최신성 주석: {ds.freshness.note}</p>}
+      {ds.freshness?.note && <p className="obs-meta">{t('profile.freshNote', { note: ds.freshness.note })}</p>}
       {/* 규칙 버전 원문은 L3(P1) — 존재는 보이되 기본 접힘 */}
       <details className="raw-section">
-        <summary>판정 방식 — 적용 규칙 버전 보기</summary>
+        <summary>{t('profile.rulesSummary')}</summary>
         <div className="prop-grid">
-          <Prop k="적용 규칙" v={meta.ruleVersions.join(', ') || '—'} />
-          <Prop k="카드 재구성 규칙" v={ds.cardRule || '—'} />
-          <Prop k="완전성 규칙" v={`${ds.completeness.rule} (${ds.completeness.profile} 프로파일)`} />
-          <Prop k="최신성 규칙" v={ds.freshness?.rule || '—'} />
+          <Prop k={t('profile.k.rules')} v={meta.ruleVersions.join(', ') || '—'} />
+          <Prop k={t('profile.k.cardRule')} v={ds.cardRule || '—'} />
+          <Prop k={t('profile.k.completenessRule')} v={t('profile.completenessRuleV', { rule: ds.completeness.rule, profile: ds.completeness.profile })} />
+          <Prop k={t('profile.k.freshRule')} v={ds.freshness?.rule || '—'} />
         </div>
       </details>
       {ds.regions?.length > 0 && (
         <>
-          <h3>지역 판정</h3>
+          <h3>{t('profile.regionTitle')}</h3>
           <ul className="case-list">
             {ds.regions.map((r) => (
               <li key={r.code}>
-                {r.name} — {EVIDENCE_LABEL[r.evidence] || r.evidence}
-                (<code>{r.evidence}</code>) · 신뢰도 {r.confidence}
+                {t('profile.regionItem', {
+                  name: r.name, label: L.EVIDENCE_LABEL[r.evidence] || r.evidence,
+                  code: r.evidence, conf: r.confidence,
+                })}
               </li>
             ))}
           </ul>
         </>
       )}
-      <p className="obs-meta">
-        구조 관측의 출처(provenance·스캔 범위)는 '데이터 구조' 렌즈의 파일별 관측 정보에 있습니다.
-      </p>
+      <p className="obs-meta">{t('profile.provNote')}</p>
     </div>
   )
 }
@@ -286,6 +284,7 @@ function EvidenceLens({ ds, meta }) {
 /* 원본 데이터 렌즈 — 기술 표현(정규화 · 원본 · JSON-LD). 판정을 덧붙이지 않고
    서버 표현을 그대로 보여 준다(불변식 3). 구 접힘 영역(§5.6)의 승격. */
 function RawLens({ recordId }) {
+  const { t, L } = useLang()
   const [view, setView] = useState('normalized')
   const [body, setBody] = useState(null)
   const [error, setError] = useState(null)
@@ -296,9 +295,9 @@ function RawLens({ recordId }) {
   }, [view, recordId])
   return (
     <div className="profile raw-lens">
-      <h2>원본 데이터 — 기술 표현</h2>
+      <h2>{t('profile.rawTitle')}</h2>
       <div className="raw-tabs">
-        {[['normalized', '정규화'], ['source', '원본'], ['jsonld', 'JSON-LD']].map(([v, label]) => (
+        {Object.entries(L.RAW_VIEW_LABEL).map(([v, label]) => (
           <button
             key={v}
             className={view === v ? 'tab active' : 'tab'}
@@ -309,7 +308,7 @@ function RawLens({ recordId }) {
         ))}
       </div>
       {error && <p className="error">{error}</p>}
-      {!body && !error && <p className="loading">불러오는 중…</p>}
+      {!body && !error && <p className="loading">{t('common.loading')}</p>}
       {body && <pre className="json-view">{JSON.stringify(body.data.dataset, null, 2)}</pre>}
     </div>
   )
@@ -327,12 +326,13 @@ function Prop({ k, v }) {
 /* 데이터 구조 렌즈(§5.3) — 실제 파일에서 관측한 원본 컬럼·유형·예시값 상태.
    미수집·보류는 오류가 아닌 정상 상태로 표시한다. sourceName은 원본 그대로. */
 function StructureView({ st }) {
+  const { t, L } = useLang()
   if (!st.assets) {
     return (
       <div className="structure-view">
         <CoverageIndicator status={st.coverageStatus} />
         {st.portalUrl && (
-          <p><a href={st.portalUrl} target="_blank" rel="noreferrer">공공데이터포털에서 원문 확인 ↗</a></p>
+          <p><a href={st.portalUrl} target="_blank" rel="noreferrer">{t('profile.portalLink')}</a></p>
         )}
       </div>
     )
@@ -351,20 +351,26 @@ function StructureView({ st }) {
             {a.containerName ? `${a.containerName} › ` : ''}{a.fileName}
             <small> {a.shape || a.format} · {a.status}</small>
           </h3>
-          {a.failureReason && <p className="obs-meta">실패 사유: {a.failureReason}</p>}
+          {a.failureReason && <p className="obs-meta">{t('profile.failReason', { r: a.failureReason })}</p>}
           <EvidenceRow className="obs-meta" observation={a.observation}>
-            {a.observation?.licenseGate === 'COLUMNS_ONLY' && ' · 예시값 라이선스 보류'}
+            {a.observation?.licenseGate === 'COLUMNS_ONLY' && t('profile.licenseGate')}
           </EvidenceRow>
-          {(a.tables || []).map((t) => (
-            <div key={t.tableIndex}>
-              {t.sheetName && <p className="sheet-name">시트: {t.sheetName}</p>}
+          {(a.tables || []).map((tb) => (
+            <div key={tb.tableIndex}>
+              {tb.sheetName && <p className="sheet-name">{t('profile.sheet', { s: tb.sheetName })}</p>}
               <div className="table-scroll" tabIndex={0}>
                 <table className="structure-table">
                   <thead>
-                    <tr><th>#</th><th>원본 컬럼명</th><th>관측 유형</th><th>고유값</th><th>예시값</th></tr>
+                    <tr>
+                      <th>#</th>
+                      <th>{t('profile.th.source')}</th>
+                      <th>{t('profile.th.type')}</th>
+                      <th>{t('profile.th.distinct')}</th>
+                      <th>{t('profile.th.examples')}</th>
+                    </tr>
                   </thead>
                   <tbody>
-                    {t.columns.map((c) => (
+                    {tb.columns.map((c) => (
                       <tr key={c.ordinal}>
                         <td>{c.ordinal}</td>
                         <td>
@@ -376,7 +382,7 @@ function StructureView({ st }) {
                         <td>
                           {c.examples
                             ? c.examples.slice(0, 3).join(', ')
-                            : <em className="ex-status">{exampleStatusLabel(c.exampleStatus, st.examplesPublic)}</em>}
+                            : <em className="ex-status">{L.exampleStatusLabel(c.exampleStatus, st.examplesPublic)}</em>}
                         </td>
                       </tr>
                     ))}
@@ -384,9 +390,11 @@ function StructureView({ st }) {
                 </table>
               </div>
               <p className="table-meta">
-                스캔 행 {t.rowsScanned?.toLocaleString() ?? '—'}
-                {t.rowCountObserved != null && <> / 관측된 전체 행 {t.rowCountObserved.toLocaleString()}</>}
-                {' '}· 컬럼 {t.columnCount} · 범위 {t.scanScope}
+                {t('profile.tableMeta', {
+                  scanned: tb.rowsScanned?.toLocaleString() ?? '—',
+                  observed: tb.rowCountObserved != null ? tb.rowCountObserved.toLocaleString() : null,
+                  cols: tb.columnCount, scope: tb.scanScope,
+                })}
               </p>
             </div>
           ))}
