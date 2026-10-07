@@ -2,7 +2,7 @@
 
 > **하고 싶은 일을 말하면, 활용할 공공데이터와 선택 근거를 찾아주는 AI 탐색·판단 계층**
 
-![snapshot](https://img.shields.io/badge/스냅샷-2026--08-blue)
+![snapshot](https://img.shields.io/badge/스냅샷-2026--09-blue)
 ![contract](https://img.shields.io/badge/MCP%20계약-v1.0.0%20동결%20%2B%20v1.8.0%20additive-success)
 ![status](https://img.shields.io/badge/서비스-v1.1%20beta-orange)
 ![license](https://img.shields.io/badge/license-MIT-green)
