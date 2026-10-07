@@ -35,13 +35,14 @@ const findEnum = (signature) => {
   return hit.filter((v) => v !== null)
 }
 
-// labels.js에서 테이블 키 추출(정규식 — 단순 식별자 키만 쓰는 파일 규약)
-const labelsSrc = readFileSync(path.resolve(here, '../src/labels.js'), 'utf-8')
-const tableKeys = (name) => {
+// labels.js(한국어 정본)와 labels.en.js(영어 표면)에서 테이블 키 추출
+// (정규식 — 단순 식별자 키만 쓰는 파일 규약). 두 파일 모두 계약 enum을 완결해야 한다.
+const LABEL_FILES = ['labels.js', 'labels.en.js']
+const tableKeysIn = (labelsSrc, name) => {
   // 여러 줄 테이블(\n} 종결) 우선, 한 줄 테이블({ ... }) 폴백
   const m = labelsSrc.match(new RegExp(`export const ${name} = \\{([\\s\\S]*?)\\n\\}`))
     || labelsSrc.match(new RegExp(`export const ${name} = \\{(.*?)\\}`))
-  if (!m) throw new Error(`labels.js에 ${name} 없음`)
+  if (!m) throw new Error(`라벨 파일에 ${name} 없음`)
   // 키는 위치 무관 추출 — 중첩 값 객체의 내부 키(text·cls)가 섞여도 누락 검사(⊇)에는 무해
   return new Set([...m[1].matchAll(/([A-Za-z_][A-Za-z0-9_]*)\s*:/g)].map((x) => x[1]))
 }
@@ -59,17 +60,20 @@ const checks = [
 ]
 
 let failed = false
-for (const [table, contract] of checks) {
-  const have = tableKeys(table)
-  const missing = contract.filter((v) => !have.has(v))
-  if (missing.length) {
-    failed = true
-    console.error(`✗ ${table}: 계약 enum ${contract.length}종 중 누락 ${missing.length} — ${missing.join(', ')}`)
-  } else {
-    console.log(`✓ ${table}: ${contract.length}/${contract.length} (${specFile})`)
+for (const file of LABEL_FILES) {
+  const labelsSrc = readFileSync(path.resolve(here, '../src', file), 'utf-8')
+  for (const [table, contract] of checks) {
+    const have = tableKeysIn(labelsSrc, table)
+    const missing = contract.filter((v) => !have.has(v))
+    if (missing.length) {
+      failed = true
+      console.error(`✗ ${file} ${table}: 계약 enum ${contract.length}종 중 누락 ${missing.length} — ${missing.join(', ')}`)
+    } else {
+      console.log(`✓ ${file} ${table}: ${contract.length}/${contract.length} (${specFile})`)
+    }
   }
 }
 if (failed) {
-  console.error('\n라벨 커버리지 가드 실패 — labels.js를 완결하라(가이드 §2.1~§2.10).')
+  console.error('\n라벨 커버리지 가드 실패 — labels.js·labels.en.js를 완결하라(가이드 §2.1~§2.10).')
   process.exit(1)
 }

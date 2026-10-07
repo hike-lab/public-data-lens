@@ -47,6 +47,14 @@ UI 작업 시 `DESIGN.md`와 `docs/UI_IMPLEMENTATION_GUIDE.md`를 먼저 읽는�
    익명 로그 옵트아웃(DNT/GPC)과 오류 모델 언랩이 여기에 있다.
 8. **`api.js`의 기존 메서드 시그니처를 바꾸지 않는다.** 메서드 추가는 허용.
 
+## 표시 언어 (ko·en)
+
+인터페이스 문안은 `apps/web/src/strings.{ko,en}.jsx`, 계약 코드 라벨은 `labels.js`·`labels.en.js`에
+같은 키·export로 둔다(`i18n.test.js`가 동일성 검사). 컴포넌트는 `useLang()`의 `t()`·`L`로만
+읽고 문자열 리터럴을 두지 않는다. **서버 값(제목·기관·설명·warnings[]·규칙 정의·지역명)은 어느
+언어에서도 번역하지 않는다** — 영어 표면은 한국어 카탈로그를 영어 인터페이스로 보는 것이다.
+상세: `docs/UI_IMPLEMENTATION_GUIDE.md` §2.1a.
+
 ## 계약 의미 — 위반하면 제품이 거짓말을 한다
 
 ```

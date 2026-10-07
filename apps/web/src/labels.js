@@ -123,3 +123,51 @@ export const COMPARE_FIELD_LABEL = {
 
 export const cycleLabel = (v) => UPDATE_CYCLE_LABEL[v] || v
 export const licenseLabel = (v) => LICENSE_LABEL[v] || v
+
+// ---- 아래는 컴포넌트에 흩어져 있던 로컬 라벨 상수를 이 레지스트리로 모은 것(가이드 §2.1).
+// 영어 표면은 labels.en.js가 같은 export 이름으로 제공한다(키 동일성은 i18n.test.js가 검증).
+
+// 시도 코드 → 표시명(검색 필터·해석 배너). 빈 코드는 '전체'
+export const REGION_LABEL = {
+  '': '지역 전체', 'KR-11': '서울', 'KR-26': '부산', 'KR-27': '대구', 'KR-28': '인천',
+  'KR-29': '광주', 'KR-30': '대전', 'KR-31': '울산', 'KR-50': '세종', 'KR-41': '경기',
+  'KR-42': '강원', 'KR-43': '충북', 'KR-44': '충남', 'KR-45': '전북', 'KR-46': '전남',
+  'KR-47': '경북', 'KR-48': '경남', 'KR-49': '제주',
+}
+
+// 검색어가 일치한 항목(matchedFields, v1.6)
+export const MATCH_FIELD_LABEL = { title: '제목', keywords: '키워드', description: '설명', orgName: '기관' }
+
+// 해석된 필터의 필드명(interpretedFilters[].field)
+export const INTERPRETED_FIELD_LABEL = { region: '지역', format: '포맷', updateCycle: '주기', listType: '유형' }
+
+// 활용 계획(build_data_plan) — 역할·적합 신호·요구 충족 상태
+export const ROLE_LABEL = {
+  PRIMARY: '주 대상', DEMAND: '수요 측', SUPPLY: '공급 측',
+  SPATIAL: '공간 결합', TEMPORAL: '시간 결합', REFERENCE: '참조·코드',
+}
+export const FIT_LABEL = {
+  searchRelevance: '검색 관련도', structureEvidence: '구조 근거',
+  freshness: '최신성', metadataCompleteness: '기재 수준',
+}
+export const NEED_STATUS_LABEL = { SATISFIED: '충족', UNSATISFIED: '미충족', PARTIAL: '부분 충족' }
+
+// 구조 수집 상태 부연(CoverageIndicator) — 중립 문안. 품질 문제로 읽히게 쓰지 않는다
+export const COVERAGE_STATUS_NOTE = {
+  AVAILABLE: '실제 파일에서 컬럼명과 기본 구조가 관측됨 — 데이터 값의 정확성·품질을 보증하지 않습니다',
+  NOT_COLLECTED: '품질 문제가 아니라 수집 순번입니다.',
+  QUEUED: '수집 순번을 기다리고 있습니다.',
+  API_STRUCTURE_NOT_SUPPORTED_YET: '파일 목록만 구조를 관측합니다.',
+}
+
+// 근거 수준 부연(EvidenceRow)
+export const EVIDENCE_LEVEL_NOTE = {
+  CATALOG_METADATA_ONLY: '실제 데이터의 내용은 확인하지 않았습니다',
+  FILE_OBSERVATION: '관측 표본 한정 — 전체 품질을 보증하지 않습니다',
+}
+
+// 상세 렌즈 5종(§5.1)과 원본 데이터 렌즈의 표현 3종
+export const LENS_LABEL = {
+  overview: '개요', structure: '데이터 구조', evidence: '근거', uses: '활용 초안', raw: '원본 데이터',
+}
+export const RAW_VIEW_LABEL = { normalized: '정규화', source: '원본', jsonld: 'JSON-LD' }
