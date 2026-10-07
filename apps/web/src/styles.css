@@ -1317,6 +1317,18 @@ button:active:not(:disabled) { transform: var(--button-active-scale); }
 .nav-link:hover { color: var(--text); background: var(--surface-1); }
 .nav-link.active { color: var(--text); font-weight: 600; background: var(--surface-2); }
 .nav-links .mcp-cta { margin-left: 8px; }
+/* 표시 언어 전환 — 조용한 세그먼트(내비와 같은 톤). 활성 항목만 굵게 */
+.lang-switch {
+  display: inline-flex; align-items: center; margin-left: 10px; padding-left: 10px;
+  border-left: 1px solid var(--line); gap: 2px;
+}
+.lang-opt {
+  border: none; background: none; padding: 6px 8px; font-size: 12.5px; cursor: pointer;
+  color: var(--muted); border-radius: 6px; font-weight: 500;
+}
+.lang-opt:hover { color: var(--text); background: var(--surface-1); }
+.lang-opt.on { color: var(--text); font-weight: 600; }
+.footer-lang-note { color: var(--muted); font-size: 12.5px; }
 .back-link {
   border: none; background: none; color: var(--muted); cursor: pointer;
   font-size: 13px; padding: 0; margin: 14px 0 4px; font-weight: 500;
@@ -1385,6 +1397,8 @@ button:active:not(:disabled) { transform: var(--button-active-scale); }
 
 @media (max-width: 720px) {
   .topnav { flex-direction: column; align-items: flex-start; gap: 8px; }
+  /* 좁은 화면에서 언어 전환은 다음 행으로 내려간다 — 구분선·들여쓰기는 같은 행일 때만 의미가 있다 */
+  .lang-switch { margin-left: 0; padding-left: 0; border-left: none; }
   .tb-label { width: 84px; }
 }
 

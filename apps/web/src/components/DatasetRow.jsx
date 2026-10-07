@@ -1,6 +1,4 @@
-import { KEY_FIELD_LABEL } from '../labels.js'
-
-const MATCH_FIELD_LABEL = { title: '제목', keywords: '키워드', description: '설명', orgName: '기관' }
+import { useLang } from '../i18n.jsx'
 import { rowButtonProps } from '../a11y.js'
 import { RegionBadges } from './EvidenceRow.jsx'
 import CoverageIndicator from './CoverageIndicator.jsx'
@@ -11,23 +9,27 @@ import CoverageIndicator from './CoverageIndicator.jsx'
    기재된 것만 칩으로 보여주고(미기재가 기본이므로), 없으면 기재 수·표준 수준만 옅게 표기. */
 
 function CompletenessBadges({ c }) {
+  const { t, L } = useLang()
   const keys = Object.entries(c.keyFields || {}).filter(([, v]) => v)
-  const title = `메타데이터 ${c.filledFields}/${c.totalFields} 항목 기재 (${c.profile} 프로파일, ${c.rule})`
-      + (c.typical ? ` — 동일 유형의 ${c.typicalShare}%가 같은 수준` : ` — 상위 ${c.topPercent}%`)
+  const title = t('row.completenessTitle', {
+    filled: c.filledFields, total: c.totalFields, profile: c.profile, rule: c.rule,
+    typical: c.typical, share: c.typicalShare, top: c.topPercent,
+  })
   return (
     <span className="completeness" title={title}>
       {keys.map(([k]) => (
-        <span key={k} className="key-field">{KEY_FIELD_LABEL[k]} ✓</span>
+        <span key={k} className="key-field">{L.KEY_FIELD_LABEL[k]} ✓</span>
       ))}
       <span className="fill-count">
-        메타데이터 {c.totalFields}개 항목 중 {c.filledFields}개 기재
-        {c.typical ? ' · 기재 수준: 표준' : ` · 같은 유형 중 상위 ${c.topPercent}%`}
+        {t('row.filled', { total: c.totalFields, filled: c.filledFields })}
+        {c.typical ? t('row.typical') : t('row.topPercent', { p: c.topPercent })}
       </span>
     </span>
   )
 }
 
 export default function DatasetRow({ item, onOpen, compared, compareFull, onToggleCompare }) {
+  const { t, L } = useLang()
   return (
     <li className="result-row">
       <div className="row-main" {...rowButtonProps(() => onOpen(item.recordId))}>
@@ -40,17 +42,17 @@ export default function DatasetRow({ item, onOpen, compared, compareFull, onTogg
           <span>{item.orgName}</span>
           {item.theme?.top && <span>{item.theme.top}{item.theme.sub ? ` › ${item.theme.sub}` : ''}</span>}
           {item.formats?.length > 0 && <span>{item.formats.join(' · ')}</span>}
-          {item.rowCountListed != null && <span>{item.rowCountListed.toLocaleString()}행</span>}
+          {item.rowCountListed != null && <span>{t('row.rows', { n: item.rowCountListed.toLocaleString() })}</span>}
         </div>
         {item.matchedColumns && (
           <p className="matched-columns">
-            일치 컬럼: {item.matchedColumns.map((m) => m.columns.join(', ')).join(' · ')}
+            {t('row.matchedColumns')}{item.matchedColumns.map((m) => m.columns.join(', ')).join(' · ')}
           </p>
         )}
         {/* v1.6: '왜 이 결과인가' — 검색어가 나타난 필드(서버 사실, 프론트 재추정 아님) */}
         {item.matchedFields?.length > 0 && (
           <p className="matched-columns">
-            검색어가 일치한 항목: {item.matchedFields.map((f) => MATCH_FIELD_LABEL[f] || f).join(', ')}
+            {t('row.matchedFields')}{item.matchedFields.map((f) => L.MATCH_FIELD_LABEL[f] || f).join(', ')}
           </p>
         )}
         <div className="row-badges">
@@ -60,18 +62,18 @@ export default function DatasetRow({ item, onOpen, compared, compareFull, onTogg
         </div>
       </div>
       <div className="row-actions">
-        <label className="compare-check" title="비교에 추가 (최대 5개)">
+        <label className="compare-check" title={t('row.compareTitle')}>
           <input
             type="checkbox"
             checked={compared}
             disabled={!compared && compareFull}
             onChange={() => onToggleCompare(item.recordId)}
           />
-          비교하기
+          {t('row.compare')}
         </label>
         {item.portalUrl && (
           <a href={item.portalUrl} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>
-            포털 원문 보기 ↗
+            {t('row.portal')}
           </a>
         )}
       </div>

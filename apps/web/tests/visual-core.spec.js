@@ -209,3 +209,30 @@ test('목적 모드 — 이름 대신 하려는 일로 탐색', async ({ page })
   await expect(page).toHaveURL(/mode=purpose/)
   await shoot(page, 'search-purpose.png')
 })
+
+test('표시 언어 전환 — 영어 표면은 인터페이스만 바꾸고 서버 값은 원문 유지', async ({ page }) => {
+  // 기본 언어는 브라우저(ko-KR)를 따른다 — 전환 컨트롤은 내비 링크 수(4)에 포함되지 않는다
+  await expect(page.locator('.lang-switch .lang-opt.on')).toHaveText('한국어')
+  await page.locator('.lang-switch .lang-opt', { hasText: 'English' }).click()
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en')
+  await expect(page.locator('.hero-title')).toContainText('What data are you looking for')
+  await expect(page.locator('.nav-links .nav-link')).toHaveCount(4)
+  await expect(page.locator('.nav-links .nav-link').first()).toHaveText('Explore')
+  // 예시 칩은 한국어 질의를 유지하고 영어 설명만 덧붙인다(카탈로그가 한국어)
+  await expect(page.locator('.examples .chip').first()).toContainText('어린이 보호구역')
+  await expect(page.locator('.footer-lang-note')).toContainText('interface only')
+  await shoot(page, 'home-en.png')
+
+  // 검색 결과: 라벨·문안은 영어, 데이터셋 제목·기관명(서버 값)은 원문
+  await searchFor(page, '어린이 보호구역')
+  await expect(page.locator('.toolbar .result-meta')).toContainText('results')
+  await expect(page.locator('.row-title strong', { hasText: CARD_TITLE }).first()).toBeVisible()
+  await expect(page.locator('.matched-columns').first()).toContainText('Query matched in')
+  await expect(page.locator('.compare-check').first()).toContainText('Compare')
+
+  // 선호는 저장된다 — 새로 고침 후에도 영어
+  await page.reload()
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en')
+  await expect(page.locator('.lang-switch .lang-opt.on')).toHaveText('English')
+  await shoot(page, 'search-results-en.png')
+})
